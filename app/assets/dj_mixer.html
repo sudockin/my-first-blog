@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DJ Mixer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cyan: #00ffff;
+      --magenta: #ff00ff;
+      --bg: #07070f;
+      --card: #0f0f1e;
+      --card2: #141428;
+      --text: #c8c8ff;
+      --muted: #55557a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    h1.title {
+      font-size: clamp(1.6rem, 5vw, 2.8rem);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-shadow: 0 0 8px var(--cyan), 0 0 24px #00aaff88;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    /* ── Console grid ─────────────────────── */
+    .console {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 18px;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    @media (max-width: 760px) {
+      .console { flex-direction: column; }
+    }
+
+    /* ── Deck ─────────────────────────────── */
+    .deck {
+      flex: 1;
+      background: var(--card);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border: 1px solid transparent;
+    }
+
+    #deck-a { border-color: #00ffff33; box-shadow: 0 0 20px #00ffff0d; }
+    #deck-b { border-color: #ff00ff33; box-shadow: 0 0 20px #ff00ff0d; }
+
+    .deck-label {
+      text-align: center;
+      font-size: 1rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    #deck-a .deck-label { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+    #deck-b .deck-label { color: var(--magenta); text-shadow: 0 0 8px var(--magenta); }
+
+    /* ── Video frame ──────────────────────── */
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .video-wrap iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* ── URL row ──────────────────────────── */
+    .url-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .url-row input {
+      flex: 1;
+      background: #0a0a18;
+      border: 1px solid #222244;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 7px;
+      font: inherit;
+      font-size: 0.8rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    #deck-a .url-row input:focus { border-color: var(--cyan); box-shadow: 0 0 8px #00ffff33; }
+    #deck-b .url-row input:focus { border-color: var(--magenta); box-shadow: 0 0 8px #ff00ff33; }
+
+    .btn-load {
+      padding: 8px 14px;
+      border-radius: 7px;
+      font: inherit;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border: 1px solid;
+      background: transparent;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    #deck-a .btn-load { border-color: var(--cyan); color: var(--cyan); }
+    #deck-a .btn-load:hover { background: #00ffff18; box-shadow: 0 0 10px #00ffff44; }
+    #deck-b .btn-load { border-color: var(--magenta); color: var(--magenta); }
+    #deck-b .btn-load:hover { background: #ff00ff18; box-shadow: 0 0 10px #ff00ff44; }
+
+    /* ── Play/Pause ───────────────────────── */
+    .btn-play {
+      width: 100%;
+      padding: 13px;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.95rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid;
+      background: transparent;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    }
+
+    #deck-a .btn-play { border-color: var(--cyan); color: var(--cyan); }
+    #deck-a .btn-play:hover { background: #00ffff18; box-shadow: 0 0 16px #00ffff55; }
+    #deck-b .btn-play { border-color: var(--magenta); color: var(--magenta); }
+    #deck-b .btn-play:hover { background: #ff00ff18; box-shadow: 0 0 16px #ff00ff55; }
+
+    .btn-play:active { transform: scale(0.96); }
+
+    /* ── Volume ───────────────────────────── */
+    .vol-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .vol-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 5px;
+      border-radius: 3px;
+      background: #1a1a33;
+      outline: none;
+      cursor: pointer;
+    }
+
+    #deck-a input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 7px var(--cyan);
+    }
+    #deck-a input[type="range"]::-moz-range-thumb {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 7px var(--cyan);
+      border: none;
+    }
+
+    #deck-b input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--magenta);
+      box-shadow: 0 0 7px var(--magenta);
+    }
+    #deck-b input[type="range"]::-moz-range-thumb {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--magenta);
+      box-shadow: 0 0 7px var(--magenta);
+      border: none;
+    }
+
+    /* ── Crossfader ───────────────────────── */
+    .crossfader-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 24px 14px;
+      min-width: 110px;
+    }
+
+    @media (max-width: 760px) {
+      .crossfader-section {
+        flex-direction: column;
+        padding: 12px 0;
+        width: 100%;
+      }
+    }
+
+    .cf-ab {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+    }
+
+    .cf-ab span:first-child { color: var(--cyan); }
+    .cf-ab span:last-child  { color: var(--magenta); }
+
+    #crossfader {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(to right, #00ffff44, #1a1a33, #ff00ff44);
+      outline: none;
+      cursor: grab;
+    }
+
+    #crossfader::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 5px;
+      background: #d0d0ff;
+      box-shadow: 0 0 10px #aaaaff88;
+      cursor: grab;
+    }
+    #crossfader::-webkit-slider-thumb:active { cursor: grabbing; }
+
+    #crossfader::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 5px;
+      background: #d0d0ff;
+      box-shadow: 0 0 10px #aaaaff88;
+      border: none;
+      cursor: grab;
+    }
+
+    .cf-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="title">🎛 DJ Mixer</h1>
+
+  <div class="console">
+
+    <!-- Deck A -->
+    <div class="deck" id="deck-a">
+      <div class="deck-label">Deck A</div>
+      <div class="video-wrap"><div id="player-a"></div></div>
+      <div class="url-row">
+        <input id="url-a" type="text" placeholder="YouTube URL or video ID">
+        <button class="btn-load" id="load-a">Load</button>
+      </div>
+      <button class="btn-play" id="play-a">Play</button>
+      <div class="vol-row">
+        <span class="vol-label">Vol</span>
+        <input type="range" id="vol-a" min="0" max="100" value="80">
+      </div>
+    </div>
+
+    <!-- Crossfader -->
+    <div class="crossfader-section">
+      <div class="cf-ab"><span>A</span><span>B</span></div>
+      <input type="range" id="crossfader" min="0" max="100" value="50">
+      <div class="cf-label">Crossfader</div>
+    </div>
+
+    <!-- Deck B -->
+    <div class="deck" id="deck-b">
+      <div class="deck-label">Deck B</div>
+      <div class="video-wrap"><div id="player-b"></div></div>
+      <div class="url-row">
+        <input id="url-b" type="text" placeholder="YouTube URL or video ID">
+        <button class="btn-load" id="load-b">Load</button>
+      </div>
+      <button class="btn-play" id="play-b">Play</button>
+      <div class="vol-row">
+        <span class="vol-label">Vol</span>
+        <input type="range" id="vol-b" min="0" max="100" value="80">
+      </div>
+    </div>
+
+  </div><!-- .console -->
+
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    var playerA = null;
+    var playerB = null;
+
+    function extractVideoId(raw) {
+      var s = raw.trim();
+      var m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+      if (m) return m[1];
+      if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+      return null;
+    }
+
+    function applyMix() {
+      var t  = parseInt(document.getElementById('crossfader').value) / 100;
+      var vA = parseInt(document.getElementById('vol-a').value);
+      var vB = parseInt(document.getElementById('vol-b').value);
+      if (playerA && playerA.setVolume) playerA.setVolume(Math.round(vA * (1 - t)));
+      if (playerB && playerB.setVolume) playerB.setVolume(Math.round(vB * t));
+    }
+
+    function syncPlayButton(btn, state) {
+      btn.textContent = (state === 1) ? 'Pause' : 'Play';
+    }
+
+    window.onYouTubeIframeAPIReady = function () {
+      playerA = new YT.Player('player-a', {
+        videoId: 'dQw4w9WgXcQ',
+        playerVars: { controls: 0, rel: 0, modestbranding: 1 },
+        events: {
+          onReady: applyMix,
+          onStateChange: function (e) { syncPlayButton(document.getElementById('play-a'), e.data); }
+        }
+      });
+
+      playerB = new YT.Player('player-b', {
+        videoId: '9bZkp7q19f0',
+        playerVars: { controls: 0, rel: 0, modestbranding: 1 },
+        events: {
+          onReady: applyMix,
+          onStateChange: function (e) { syncPlayButton(document.getElementById('play-b'), e.data); }
+        }
+      });
+    };
+
+    document.getElementById('play-a').addEventListener('click', function () {
+      if (!playerA) return;
+      playerA.getPlayerState() === 1 ? playerA.pauseVideo() : playerA.playVideo();
+    });
+
+    document.getElementById('play-b').addEventListener('click', function () {
+      if (!playerB) return;
+      playerB.getPlayerState() === 1 ? playerB.pauseVideo() : playerB.playVideo();
+    });
+
+    document.getElementById('load-a').addEventListener('click', function () {
+      var id = extractVideoId(document.getElementById('url-a').value);
+      if (id && playerA) { playerA.loadVideoById(id); playerA.pauseVideo(); }
+    });
+
+    document.getElementById('load-b').addEventListener('click', function () {
+      var id = extractVideoId(document.getElementById('url-b').value);
+      if (id && playerB) { playerB.loadVideoById(id); playerB.pauseVideo(); }
+    });
+
+    document.getElementById('crossfader').addEventListener('input', applyMix);
+    document.getElementById('vol-a').addEventListener('input', applyMix);
+    document.getElementById('vol-b').addEventListener('input', applyMix);
+  </script>
+
+</body>
+</html>
