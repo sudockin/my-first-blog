@@ -283,6 +283,15 @@
 
   <h1 class="title">🎛 DJ Mixer</h1>
 
+  <div id="file-warning" style="display:none; background:#1a0a00; border:1px solid #ff6600; color:#ffaa44; border-radius:10px; padding:16px 20px; margin-bottom:24px; max-width:700px; width:100%; font-size:0.85rem; line-height:1.6; text-align:center;">
+    <strong style="color:#ff8800;">YouTube requires HTTP — open this file via a local server, not file://</strong><br>
+    Run this in your terminal, then open the URL it shows:<br>
+    <code style="background:#0a0a00; padding:6px 12px; border-radius:5px; display:inline-block; margin-top:8px; color:#ffcc88;">
+      python3 -m http.server 8080 --directory /home/user/my-first-blog/app/assets
+    </code><br>
+    <span style="color:#ff8800;">→</span> Then visit <strong>http://localhost:8080/dj_mixer.html</strong>
+  </div>
+
   <div class="console">
 
     <!-- Deck A -->
@@ -326,6 +335,10 @@
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
+    if (location.protocol === 'file:') {
+      document.getElementById('file-warning').style.display = 'block';
+    }
+
     var playerA = null;
     var playerB = null;
 
