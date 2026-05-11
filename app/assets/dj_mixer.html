@@ -351,8 +351,8 @@
 
     window.onYouTubeIframeAPIReady = function () {
       playerA = new YT.Player('player-a', {
-        videoId: 'dQw4w9WgXcQ',
-        playerVars: { controls: 0, rel: 0, modestbranding: 1 },
+        videoId: 'jNQXAC9IVRw',
+        playerVars: { rel: 0 },
         events: {
           onReady: applyMix,
           onStateChange: function (e) { syncPlayButton(document.getElementById('play-a'), e.data); }
@@ -360,8 +360,8 @@
       });
 
       playerB = new YT.Player('player-b', {
-        videoId: '9bZkp7q19f0',
-        playerVars: { controls: 0, rel: 0, modestbranding: 1 },
+        videoId: 'M7lc1UVf-VE',
+        playerVars: { rel: 0 },
         events: {
           onReady: applyMix,
           onStateChange: function (e) { syncPlayButton(document.getElementById('play-b'), e.data); }
