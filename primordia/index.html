@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Primordia</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="world"></canvas>
+
+<div id="vignette"></div>
+
+<div id="hud">
+  <div class="row" id="hud-name"></div>
+  <div class="row" id="hud-biomass"></div>
+  <div class="row" id="hud-gen"></div>
+  <div class="row" id="hud-traits"></div>
+</div>
+
+<div id="ambient-log"></div>
+
+<div id="mutation" class="hidden">
+  <div class="m-title">A change stirs.</div>
+  <div class="m-choices"></div>
+  <div class="m-hint">click a path · or wait for it to pass</div>
+</div>
+
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-title">PRIMORDIA</div>
+    <div class="boot-sub">drift · consume · become</div>
+    <button id="begin">begin</button>
+    <div class="boot-foot">sound on — click to wake</div>
+  </div>
+</div>
+
+<div id="board" class="hidden">
+  <div class="board-title">other forms</div>
+  <div class="board-list"></div>
+  <div class="board-close">close</div>
+</div>
+
+<div id="tab-board">≡</div>
+
+<script src="game.js"></script>
+</body>
+</html>
