@@ -1,0 +1,62 @@
+name: Deploy DJ Mixer to dj-mixer repo
+
+# Auto-sync index.html -> sudockin/dj-mixer (which serves GitHub Pages).
+# Removes the manual curl step: edit here, it lands on the live site.
+#
+# One-time setup (required once):
+#   1. Create a token that can write to sudockin/dj-mixer:
+#        - Fine-grained PAT: repo = sudockin/dj-mixer, Contents = Read and write
+#          (or a classic PAT with the `repo` scope)
+#   2. Add it to THIS repo:  Settings > Secrets and variables > Actions
+#        Name:  DJ_MIXER_DEPLOY_TOKEN
+#        Value: <the token>
+# After that, every push that changes index.html deploys automatically.
+
+on:
+  push:
+    branches:
+      - claude/dj-youtube-mixer-qIYPm
+      - main
+    paths:
+      - index.html
+      - .nojekyll
+  workflow_dispatch: {}   # allow manual runs from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source (my-first-blog)
+        uses: actions/checkout@v4
+
+      - name: Push index.html to dj-mixer
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DJ_MIXER_DEPLOY_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DEPLOY_TOKEN:-}" ]; then
+            echo "::error::DJ_MIXER_DEPLOY_TOKEN secret is not set. See the comment at the top of this workflow."
+            exit 1
+          fi
+
+          git config --global user.name  "dj-mixer-bot"
+          git config --global user.email "dj-mixer-bot@users.noreply.github.com"
+
+          git clone --depth 1 \
+            "https://x-access-token:${DEPLOY_TOKEN}@github.com/sudockin/dj-mixer.git" target
+
+          cp index.html target/index.html
+          # Keep Pages serving raw HTML (no Jekyll processing)
+          touch target/.nojekyll
+
+          cd target
+          if git diff --quiet; then
+            echo "No changes to deploy — dj-mixer is already up to date."
+            exit 0
+          fi
+
+          git add index.html .nojekyll
+          git commit -m "Sync DJ Mixer from my-first-blog@${GITHUB_SHA::7}"
+          git push origin HEAD:main
+          echo "Deployed to sudockin/dj-mixer (GitHub Pages will update shortly)."
