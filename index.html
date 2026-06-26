@@ -782,6 +782,299 @@
       .track-name { width: 90%; font-size: 0.75rem; }
       .system-warning { font-size: 0.78rem; }
     }
+
+    /* ── Beat grid overlay (drawn over the waveform) ── */
+    .beatgrid {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .beat-line {
+      position: absolute;
+      top: 6%;
+      bottom: 6%;
+      width: 1px;
+      margin-left: -0.5px;
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .beat-line.down { width: 2px; margin-left: -1px; background: rgba(255, 255, 255, 0.42); }
+    #deck-a .beat-line.active { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); width: 2px; }
+    #deck-b .beat-line.active { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); width: 2px; }
+
+    /* ── BPM sub-line (detected + effective) ── */
+    .bpm-sub {
+      margin-top: 1px;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.52rem;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    /* ── Sync / nudge row ── */
+    .sync-row {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-sync, .btn-nudge {
+      cursor: pointer;
+      min-height: 42px;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 750;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: transform 0.1s, background 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.2s, opacity 0.2s;
+    }
+    .btn-sync {
+      color: var(--text);
+      background: rgba(57, 217, 138, 0.1);
+      border: 1px solid rgba(57, 217, 138, 0.4);
+    }
+    .btn-sync:hover:not(:disabled) { background: rgba(57, 217, 138, 0.18); box-shadow: 0 0 16px rgba(57, 217, 138, 0.25); }
+    .btn-sync.master   { background: rgba(255, 189, 74, 0.16); border-color: var(--amber); color: var(--amber); }
+    .btn-sync.follower { background: rgba(57, 217, 138, 0.22); border-color: var(--green); color: var(--green); }
+    .btn-sync.fail     { border-color: var(--red); color: var(--red); animation: shake 0.3s ease; }
+    .btn-nudge {
+      color: #cbd4ed;
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .btn-nudge:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+    .btn-nudge.hit { background: rgba(255, 255, 255, 0.22); }
+    .btn-sync:active:not(:disabled), .btn-nudge:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
+    .btn-sync:disabled, .btn-nudge:disabled { opacity: 0.3; cursor: not-allowed; }
+    .deck.yt .sync-row { display: none; }
+
+    /* ── Phase / drift meter (beside the crossfader) ── */
+    .phase-meter {
+      order: -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+    .phase-cap {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.54rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .phase-track {
+      position: relative;
+      width: 100%;
+      height: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .phase-track::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .phase-needle {
+      position: absolute;
+      top: -2px; bottom: -2px;
+      left: 50%;
+      width: 4px;
+      margin-left: -2px;
+      border-radius: 2px;
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(57, 217, 138, 0.7);
+      transition: left 0.06s linear, background 0.2s;
+    }
+    .phase-needle.hot { background: var(--red); box-shadow: 0 0 8px rgba(255, 84, 112, 0.8); }
+    .phase-readout {
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.03em;
+      text-align: center;
+    }
+    .phase-roles {
+      min-height: 0.7em;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+
+    /* ── Debug toggle + panel ── */
+    .debug-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .debug-toggle input { accent-color: var(--cyan); cursor: pointer; }
+    .debug-panel {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      width: 100%;
+      margin: 18px auto 0;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .debug-panel.open { display: grid; }
+    .debug-deck h4 {
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    #dbg-a-wrap h4 { color: var(--cyan); }
+    #dbg-b-wrap h4 { color: var(--magenta); }
+    .debug-deck pre {
+      margin: 0;
+      color: #aeb6cc;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    /* ── Keyboard help ── */
+    .kbd-help {
+      margin-top: 14px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.03em;
+      text-align: center;
+      line-height: 1.7;
+    }
+    .kbd-help kbd {
+      padding: 1px 6px;
+      margin: 0 1px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+    }
+
+    /* ── Touch usability (all touch devices) ── */
+    input[type="range"] { touch-action: none; }
+    button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .btn-load, .btn-extra, .btn-play, .btn-sync, .btn-nudge, .btn-tap,
+    .btn-reset-bpm, .btn-reset-tempo, .state-badge, .deck-label, .cf-label,
+    .source-hint, .phase-cap, .phase-readout, .track-name {
+      -webkit-user-select: none; user-select: none;
+    }
+
+    /* ── Safe-area insets (notch / dynamic island) ── */
+    body {
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      padding-bottom: max(36px, env(safe-area-inset-bottom));
+    }
+
+    /* ── Rotate-to-landscape overlay (small phones in portrait) ── */
+    .rotate-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(160deg, #0b1020, #05070c);
+      text-align: center;
+    }
+    .rotate-card { max-width: 320px; }
+    .rotate-icon { font-size: 3rem; margin-bottom: 14px; animation: rothint 1.8s ease-in-out infinite; }
+    @keyframes rothint { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(84deg); } }
+    .rotate-title {
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .rotate-sub { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+    @media (max-width: 600px) and (orientation: portrait) {
+      .rotate-overlay { display: flex; }
+    }
+
+    /* ── Mobile landscape: keep both decks + crossfader on screen ── */
+    @media (orientation: landscape) and (max-height: 480px) {
+      body {
+        padding-top: max(8px, env(safe-area-inset-top));
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+      }
+      .masthead { margin-bottom: 8px; grid-template-columns: 1fr; gap: 0; }
+      .masthead-kicker, .masthead-status { display: none; }
+      h1.title { flex-direction: row; font-size: 1.1rem; gap: 8px; }
+      .title-mark { width: 26px; font-size: 0.6rem; }
+      .system-warning { padding: 8px 12px; font-size: 0.72rem; margin-bottom: 8px; }
+
+      .console {
+        grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr);
+        gap: 8px;
+        max-width: none;
+        margin: 0;
+        align-items: start;
+      }
+      .deck { padding: 9px; gap: 7px; border-radius: 7px; }
+      .deck::before { height: 2px; }
+      .video-wrap { aspect-ratio: auto; height: 84px; }
+
+      .deck-header { gap: 6px; }
+      .deck-label { font-size: 0.66rem; letter-spacing: 0.1em; }
+      .state-badge { min-width: 0; min-height: 20px; padding: 2px 7px; font-size: 0.52rem; }
+
+      /* Hide secondary / explanatory UI on small landscape */
+      .source-hint, .tempo-marks, .tempo-note, .kbd-help { display: none; }
+
+      .bpm-row { gap: 6px; }
+      .bpm-block { min-width: 58px; padding: 3px 8px; }
+      .bpm-value { font-size: 0.95rem; }
+      .bpm-sub { font-size: 0.46rem; }
+
+      .url-row, .extra-row, .sync-row { gap: 6px; }
+      .url-row input { min-height: 40px; font-size: 0.8rem; }
+      .btn-load, .btn-extra, .btn-tap, .btn-reset-bpm, .btn-reset-tempo { min-height: 40px; font-size: 0.74rem; }
+      .btn-sync, .btn-nudge { min-height: 42px; font-size: 0.62rem; }
+      .btn-play { min-height: 46px; font-size: 0.82rem; }
+
+      .tempo-row { gap: 4px; }
+      .tempo-header { gap: 6px; }
+      .vol-row { gap: 8px; }
+
+      .crossfader-section { padding: 10px 8px; gap: 8px; min-height: 0; }
+      .phase-cap { font-size: 0.48rem; }
+      .phase-readout { font-size: 0.54rem; }
+      .phase-roles, .cf-label { display: none; }
+
+      .project-link { margin-top: 8px; font-size: 0.6rem; }
+      .debug-panel { padding: 10px; }
+      .debug-deck pre { font-size: 0.58rem; }
+    }
   </style>
 </head>
 <body>
@@ -790,7 +1083,7 @@
     <header class="masthead">
       <div class="masthead-kicker">Browser DJ console</div>
       <h1 class="title"><span class="title-mark" aria-hidden="true">MIX</span>DJ Mixer</h1>
-      <div class="masthead-status">Live in the browser</div>
+      <div class="masthead-status">Live in the browser<label class="debug-toggle"><input type="checkbox" id="debug-chk">Debug</label></div>
     </header>
 
     <div id="file-warning" class="system-warning">
@@ -810,7 +1103,7 @@
       <div class="video-wrap">
         <div id="player-a"></div>
         <div class="audio-visual" id="audio-vis-a">
-          <div class="waveform-host" id="waveform-a"></div>
+          <div class="waveform-host" id="waveform-a"><div class="beatgrid" id="beatgrid-a"></div></div>
           <div class="track-name" id="track-name-a">No track loaded</div>
         </div>
         <div class="deck-overlay loading" id="overlay-a">
@@ -824,6 +1117,7 @@
         <div class="bpm-block">
           <span class="bpm-label">BPM</span>
           <span class="bpm-value" id="bpm-a">—</span>
+          <span class="bpm-sub" id="bpm-sub-a">det — · eff —</span>
         </div>
         <button class="btn-tap" id="tap-a">Tap</button>
         <button class="btn-reset-bpm" id="reset-bpm-a">Reset</button>
@@ -846,7 +1140,12 @@
         </div>
         <input type="range" class="tempo-slider" id="tempo-a" min="-8" max="8" step="0.1" value="0" aria-label="Deck A tempo">
         <div class="tempo-marks"><span>−8%</span><span>0</span><span>+8%</span></div>
-        <div class="tempo-note">Upload a file or load an audio URL for tempo control</div>
+        <div class="tempo-note">YouTube allows only coarse speeds — use Demo / File / Audio URL for fine pitch &amp; sync</div>
+      </div>
+      <div class="sync-row" id="sync-row-a">
+        <button class="btn-sync" id="sync-a" disabled>Sync</button>
+        <button class="btn-nudge" id="nudge-back-a" disabled title="Nudge back (Q)">⟨ Nudge</button>
+        <button class="btn-nudge" id="nudge-fwd-a" disabled title="Nudge forward (W)">Nudge ⟩</button>
       </div>
       <button class="btn-play" id="play-a" disabled>Play</button>
       <div class="vol-row">
@@ -857,6 +1156,12 @@
 
     <!-- ── Crossfader ── -->
     <div class="crossfader-section">
+      <div class="phase-meter" id="phase-meter">
+        <div class="phase-cap">Phase / Drift</div>
+        <div class="phase-track"><div class="phase-needle" id="phase-needle"></div></div>
+        <div class="phase-readout" id="phase-readout">— · —</div>
+        <div class="phase-roles" id="phase-roles"></div>
+      </div>
       <div class="cf-ab"><span>A</span><span>B</span></div>
       <input type="range" id="crossfader" min="0" max="100" value="50" aria-label="Crossfader">
       <div class="cf-label">Crossfader</div>
@@ -871,7 +1176,7 @@
       <div class="video-wrap">
         <div id="player-b"></div>
         <div class="audio-visual" id="audio-vis-b">
-          <div class="waveform-host" id="waveform-b"></div>
+          <div class="waveform-host" id="waveform-b"><div class="beatgrid" id="beatgrid-b"></div></div>
           <div class="track-name" id="track-name-b">No track loaded</div>
         </div>
         <div class="deck-overlay loading" id="overlay-b">
@@ -885,6 +1190,7 @@
         <div class="bpm-block">
           <span class="bpm-label">BPM</span>
           <span class="bpm-value" id="bpm-b">—</span>
+          <span class="bpm-sub" id="bpm-sub-b">det — · eff —</span>
         </div>
         <button class="btn-tap" id="tap-b">Tap</button>
         <button class="btn-reset-bpm" id="reset-bpm-b">Reset</button>
@@ -907,7 +1213,12 @@
         </div>
         <input type="range" class="tempo-slider" id="tempo-b" min="-8" max="8" step="0.1" value="0" aria-label="Deck B tempo">
         <div class="tempo-marks"><span>−8%</span><span>0</span><span>+8%</span></div>
-        <div class="tempo-note">Upload a file or load an audio URL for tempo control</div>
+        <div class="tempo-note">YouTube allows only coarse speeds — use Demo / File / Audio URL for fine pitch &amp; sync</div>
+      </div>
+      <div class="sync-row" id="sync-row-b">
+        <button class="btn-sync" id="sync-b" disabled>Sync</button>
+        <button class="btn-nudge" id="nudge-back-b" disabled title="Nudge back (O)">⟨ Nudge</button>
+        <button class="btn-nudge" id="nudge-fwd-b" disabled title="Nudge forward (P)">Nudge ⟩</button>
       </div>
       <button class="btn-play" id="play-b" disabled>Play</button>
       <div class="vol-row">
@@ -917,8 +1228,27 @@
     </div>
 
     </section>
+
+    <div class="kbd-help">
+      <strong>SYNC</strong> locks a deck to the other deck's tempo &amp; beat ·
+      Nudge — Deck&nbsp;A <kbd>Q</kbd>/<kbd>W</kbd> · Deck&nbsp;B <kbd>O</kbd>/<kbd>P</kbd>
+    </div>
+
+    <div class="debug-panel" id="debug-panel">
+      <div class="debug-deck" id="dbg-a-wrap"><h4>Deck A timing</h4><pre id="dbg-a">—</pre></div>
+      <div class="debug-deck" id="dbg-b-wrap"><h4>Deck B timing</h4><pre id="dbg-b">—</pre></div>
+    </div>
+
     <a class="project-link" href="https://github.com/sudockin/dj-mixer" target="_blank" rel="noopener">View source on GitHub</a>
   </main>
+
+  <div class="rotate-overlay" id="rotate-overlay">
+    <div class="rotate-card">
+      <div class="rotate-icon">📱</div>
+      <div class="rotate-title">Rotate to landscape</div>
+      <div class="rotate-sub">Turn your phone sideways for the full DJ mixer.</div>
+    </div>
+  </div>
 
   <!-- WaveSurfer must load (non-deferred) before the inline script runs -->
   <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
@@ -966,6 +1296,22 @@
     var tapArrays      = { a: [], b: [] };
     var detectedBPM    = { a: null, b: null };
     var failedUrls     = []; // debug log
+
+    // ── Beatmatch / timing state ──────────────────────────────────────────
+    function newTiming() {
+      return { knownBpm:null, detectedBpm:null, normBpm:null, beatOffset:0,
+               beatDurSource:0, rate:1, effBpm:null, currentBeat:0, beatPhase:0,
+               beatDurMs:0, currentTime:0, duration:0, syncTrim:1,
+               master:false, follower:false, activeBeatIdx:-1 };
+    }
+    var timing     = { a: newTiming(), b: newTiming() };
+    var masterDeck = null;
+    var demoCache  = { a: null, b: null };
+    var DEMO_META  = {
+      a: { bpm: 120, seconds: 130, name: 'Beat Loop A · 120 BPM' },
+      b: { bpm: 126, seconds: 130, name: 'Beat Loop B · 126 BPM' }
+    };
+    function other(d) { return d === 'a' ? 'b' : 'a'; }
 
     // ── Helpers ───────────────────────────────────────────────────────────
     function el(id) { return document.getElementById(id); }
@@ -1180,13 +1526,18 @@
       stopAudioEngines(deck);
       el('audio-vis-' + deck).style.display = 'none';
       el('tempo-row-' + deck).classList.add('yt-mode');
+      el('deck-' + deck).classList.add('yt');
       deckType[deck] = 'youtube';
+      clearBeatGrid(deck);
+      clearRoles();
+      updateSyncAvailability(deck);
     }
 
     function enterAudioMode(deck) {
       if (ytPlayers[deck]) { try { ytPlayers[deck].destroy(); } catch(e) {} ytPlayers[deck] = null; }
       el('audio-vis-' + deck).style.display = 'flex';
       el('tempo-row-' + deck).classList.remove('yt-mode');
+      el('deck-' + deck).classList.remove('yt');
       deckType[deck] = 'audio';
     }
 
@@ -1302,15 +1653,19 @@
         applyMix();
         // Re-apply current tempo to the freshly loaded track
         applyTempo(deck);
-        // BPM detection (async so it doesn't block the ready paint)
-        setBPMDisplay(deck, '…');
-        setTimeout(function () {
-          var bpm = null;
-          try { var buf = ws.getDecodedData(); bpm = buf ? detectBPM(buf) : null; } catch (e) {}
-          detectedBPM[deck] = bpm;
-          tapArrays[deck] = [];
-          setBPMDisplay(deck, bpm);
-        }, 50);
+        if (timing[deck].knownBpm) {
+          // Generated demo loop — exact BPM, beat 1 at t=0 (no detection needed)
+          setTimingBpm(deck, timing[deck].knownBpm);
+        } else {
+          // BPM detection (async so it doesn't block the ready paint)
+          setBPMDisplay(deck, '…');
+          setTimeout(function () {
+            var bpm = null;
+            try { var buf = ws.getDecodedData(); bpm = buf ? detectBPM(buf) : null; } catch (e) {}
+            tapArrays[deck] = [];
+            setTimingBpm(deck, bpm);
+          }, 50);
+        }
       });
 
       ws.on('play',   function () { setState(deck, 'playing'); });
@@ -1388,7 +1743,8 @@
       }
     }
 
-    function loadAudio(deck, src, name) {
+    function loadAudio(deck, src, name, opts) {
+      opts = opts || {};
       enterAudioMode(deck);
       stopAudioEngines(deck); // clear whatever this deck was running before
       var url   = (typeof src === 'string') ? src : URL.createObjectURL(src);
@@ -1399,8 +1755,27 @@
       detectedBPM[deck] = null;
       tapArrays[deck] = [];
       setBPMDisplay(deck, null);
+
+      // Reset beatmatch timing for this deck
+      timing[deck] = newTiming();
+      timing[deck].knownBpm   = opts.knownBpm || null;
+      timing[deck].beatOffset = opts.beatOffset || 0;
+      el('bpm-sub-' + deck).textContent = 'det — · eff —';
+      el('tempo-' + deck).value = 0;
+      el('tempo-pct-' + deck).textContent = '0.0%';
+      clearBeatGrid(deck);
+      clearRoles();
+      updateSyncAvailability(deck);
+
       setState(deck, 'loading');
       armLoadTimer(deck);
+
+      // If the WaveSurfer library didn't load (CDN blocked / offline), degrade
+      // gracefully to a plain <audio> element instead of hanging on 'loading'.
+      if (typeof WaveSurfer === 'undefined') {
+        fallbackToMedia(deck, url, label);
+        return;
+      }
 
       // Try WaveSurfer first (waveform + BPM); fall back to <audio> on CORS error.
       wsPendingSrc[deck] = { url: url, name: label };
@@ -1421,7 +1796,7 @@
     // ── Tempo / pitch ─────────────────────────────────────────────────────
     function applyTempo(deck) {
       var pct  = parseFloat(el('tempo-' + deck).value) || 0;
-      var rate = 1 + pct / 100;
+      var rate = getDeckRate(deck); // includes phase-lock trim while synced
       el('tempo-pct-' + deck).textContent = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
       if (audioEngine[deck] === 'media') {
         var audio = mediaEls[deck];
@@ -1472,28 +1847,36 @@
           this.value = ''; // reset so same file can be reloaded
         });
 
-        // Demo track
+        // Demo track (generated beat loop — exact BPM, reliable sync)
         el('btn-demo-' + deck).addEventListener('click', function () {
-          var demo = DEMOS[deck];
-          loadAudio(deck, demo.src, demo.name);
+          ensureAudioContextResumed();
+          loadDemo(deck);
         });
 
         // Play / Pause
         el('play-' + deck).addEventListener('click', function () {
+          ensureAudioContextResumed();
           if (deckType[deck] === 'audio') {
             if (audioEngine[deck] === 'media') {
               var audio = mediaEls[deck];
               if (!audio) return;
               if (audio.paused) {
-                audio.play().catch(function () { setState(deck, 'ready'); });
+                audio.play().catch(function () { showTapToStart(deck); });
               } else {
                 audio.pause();
               }
             } else {
               var ws = waveEls[deck];
               if (!ws) return;
-              try { ws.playPause(); } catch(e) {
-                setState(deck, 'error', 'Playback blocked. Try clicking again.');
+              try {
+                if (ws.isPlaying && ws.isPlaying()) {
+                  ws.pause();
+                } else {
+                  var pr = ws.play();
+                  if (pr && typeof pr.catch === 'function') pr.catch(function () { showTapToStart(deck); });
+                }
+              } catch (e) {
+                showTapToStart(deck);
               }
             }
           } else {
@@ -1520,9 +1903,15 @@
           setBPMDisplay(deck, detectedBPM[deck]);
         });
 
-        // Tempo / pitch slider
-        el('tempo-' + deck).addEventListener('input', function () { applyTempo(deck); });
+        // Tempo / pitch slider — manual change breaks an active sync lock
+        el('tempo-' + deck).addEventListener('input', function () {
+          if (timing[deck].master || timing[deck].follower) clearRoles();
+          timing[deck].syncTrim = 1;
+          applyTempo(deck);
+        });
         el('reset-tempo-' + deck).addEventListener('click', function () {
+          if (timing[deck].master || timing[deck].follower) clearRoles();
+          timing[deck].syncTrim = 1;
           el('tempo-' + deck).value = 0;
           applyTempo(deck);
         });
@@ -1531,6 +1920,440 @@
       el('crossfader').addEventListener('input', applyMix);
       el('vol-a').addEventListener('input', applyMix);
       el('vol-b').addEventListener('input', applyMix);
+    }
+
+    // ── Beat / timing engine ──────────────────────────────────────────────
+    function normalizeBpm(bpm) {
+      if (!bpm || !isFinite(bpm)) return null;
+      bpm = Math.abs(bpm);
+      while (bpm < 80)  bpm *= 2;   // practical DJ range 80–180
+      while (bpm > 180) bpm /= 2;
+      return bpm;
+    }
+
+    function getDeckRate(deck) {
+      if (deckType[deck] !== 'audio') return 1;
+      // slider pitch × tiny phase-lock trim (applied to the follower while synced)
+      return (1 + (parseFloat(el('tempo-' + deck).value) || 0) / 100) * (timing[deck].syncTrim || 1);
+    }
+
+    function getDeckTime(deck) {
+      try {
+        if (deckType[deck] === 'youtube') return (ytPlayers[deck] && ytPlayers[deck].getCurrentTime()) || 0;
+        if (audioEngine[deck] === 'media') return mediaEls[deck] ? mediaEls[deck].currentTime : 0;
+        if (waveEls[deck]) return waveEls[deck].getCurrentTime() || 0;
+      } catch (e) {}
+      return 0;
+    }
+
+    function getDeckDuration(deck) {
+      try {
+        if (deckType[deck] === 'youtube') return (ytPlayers[deck] && ytPlayers[deck].getDuration()) || 0;
+        if (audioEngine[deck] === 'media') return (mediaEls[deck] && mediaEls[deck].duration) || 0;
+        if (waveEls[deck]) return waveEls[deck].getDuration() || 0;
+      } catch (e) {}
+      return 0;
+    }
+
+    function seekDeck(deck, sec) {
+      sec = Math.max(0, sec);
+      try {
+        if (deckType[deck] === 'youtube') { if (ytPlayers[deck]) ytPlayers[deck].seekTo(sec, true); return; }
+        if (audioEngine[deck] === 'media') { if (mediaEls[deck]) mediaEls[deck].currentTime = sec; return; }
+        var ws = waveEls[deck];
+        if (ws) {
+          if (typeof ws.setTime === 'function') ws.setTime(sec);
+          else { var d = ws.getDuration(); if (d) ws.seekTo(sec / d); }
+        }
+      } catch (e) {}
+    }
+
+    function setTimingBpm(deck, rawBpm) {
+      var t = timing[deck];
+      t.detectedBpm  = rawBpm || null;
+      t.normBpm      = rawBpm ? normalizeBpm(rawBpm) : null;
+      t.beatDurSource = t.normBpm ? 60 / t.normBpm : 0;
+      detectedBPM[deck] = t.normBpm ? Math.round(t.normBpm) : null;
+      setBPMDisplay(deck, t.normBpm ? Math.round(t.normBpm) : null);
+      el('bpm-sub-' + deck).textContent = t.normBpm
+        ? 'det ' + Math.round(t.normBpm) + ' · eff ' + (t.normBpm * getDeckRate(deck)).toFixed(1)
+        : 'det — · eff —';
+      buildBeatGrid(deck);
+      updateSyncAvailability(deck);
+    }
+
+    // ── Beat grid ──────────────────────────────────────────────────────────
+    function clearBeatGrid(deck) {
+      var host = el('beatgrid-' + deck);
+      if (host) host.innerHTML = '';
+      timing[deck].activeBeatIdx = -1;
+    }
+
+    function buildBeatGrid(deck) {
+      var host = el('beatgrid-' + deck);
+      if (!host) return;
+      host.innerHTML = '';
+      timing[deck].activeBeatIdx = -1;
+      var t = timing[deck];
+      if (!t.normBpm) { host.style.display = 'none'; return; }
+      host.style.display = '';
+      var dur = getDeckDuration(deck);
+      if (!dur || !isFinite(dur) || dur <= 0) return;
+      var bd = 60 / t.normBpm;
+      t.beatDurSource = bd;
+      var frag = document.createDocumentFragment();
+      var k = 0, beatTime = t.beatOffset, max = 4000;
+      while (beatTime < dur && k < max) {
+        var line = document.createElement('div');
+        line.className = 'beat-line' + (k % 4 === 0 ? ' down' : '');
+        line.style.left = (beatTime / dur * 100) + '%';
+        frag.appendChild(line);
+        k++; beatTime = t.beatOffset + k * bd;
+      }
+      host.appendChild(frag);
+    }
+
+    function updateActiveBeat(deck, idx) {
+      var t = timing[deck];
+      if (idx === t.activeBeatIdx) return;
+      var host = el('beatgrid-' + deck);
+      if (!host) return;
+      var prev = host.children[t.activeBeatIdx];
+      if (prev) prev.classList.remove('active');
+      var cur = host.children[idx];
+      if (cur) cur.classList.add('active');
+      t.activeBeatIdx = idx;
+    }
+
+    // ── Sync availability + master/follower roles ──────────────────────────
+    function updateSyncAvailability(deck) {
+      var enable = deckType[deck] === 'audio' && !!timing[deck].normBpm;
+      ['sync-', 'nudge-back-', 'nudge-fwd-'].forEach(function (p) {
+        var b = el(p + deck); if (b) b.disabled = !enable;
+      });
+    }
+
+    function markRoles() {
+      ['a', 'b'].forEach(function (d) {
+        var b = el('sync-' + d); if (!b) return;
+        b.classList.toggle('master', timing[d].master);
+        b.classList.toggle('follower', timing[d].follower);
+        b.textContent = timing[d].master ? 'Master' : (timing[d].follower ? 'Synced' : 'Sync');
+      });
+    }
+
+    function clearRoles() {
+      timing.a.master = timing.a.follower = false;
+      timing.b.master = timing.b.follower = false;
+      masterDeck = null;
+      markRoles();
+    }
+
+    function flashSyncFail(deck) {
+      var b = el('sync-' + deck); if (!b) return;
+      b.classList.add('fail');
+      setTimeout(function () { b.classList.remove('fail'); }, 400);
+    }
+
+    // Sync `follower` to the OTHER deck (which must be an audio deck, playing).
+    function syncDeck(follower) {
+      var master = other(follower);
+      if (deckType[master] !== 'audio' || !timing[master].normBpm || states[master] !== 'playing') {
+        flashSyncFail(follower); return;
+      }
+      if (deckType[follower] !== 'audio' || !timing[follower].normBpm) { flashSyncFail(follower); return; }
+
+      // 1) Match tempo: follower effective BPM = master effective BPM
+      timing[follower].syncTrim = 1;
+      var mEff   = timing[master].normBpm * getDeckRate(master);
+      var fRate  = mEff / timing[follower].normBpm;
+      var fPct   = (fRate - 1) * 100;
+      var clamped = Math.max(-8, Math.min(8, fPct));
+      el('tempo-' + follower).value = clamped.toFixed(2);
+      applyTempo(follower);
+
+      // 2) Coarse phase align: jump follower's nearest beat onto master's phase
+      //    (the continuous phase-lock below then removes any seek-latency residual)
+      var bd     = 60 / timing[follower].normBpm;
+      var mPhase = ((getDeckTime(master) - timing[master].beatOffset) / (60 / timing[master].normBpm));
+      mPhase = ((mPhase % 1) + 1) % 1;
+      var tF     = getDeckTime(follower);
+      var rel    = tF - timing[follower].beatOffset;
+      var k      = Math.round(rel / bd - mPhase);
+      var target = timing[follower].beatOffset + (k + mPhase) * bd;
+      if (target < 0) target += bd;
+      var dur = getDeckDuration(follower);
+      if (dur && target > dur - 0.05) target -= bd;
+      seekDeck(follower, target);
+
+      // 3) Roles
+      timing.a.master = timing.a.follower = false;
+      timing.b.master = timing.b.follower = false;
+      timing[master].master   = true;
+      timing[follower].follower = true;
+      masterDeck = master;
+      markRoles();
+    }
+
+    // ── Nudge ───────────────────────────────────────────────────────────────
+    function nudge(deck, deltaSec) {
+      if (deckType[deck] !== 'audio' || !timing[deck].normBpm) return;
+      seekDeck(deck, Math.max(0, getDeckTime(deck) + deltaSec));
+      var b = el((deltaSec < 0 ? 'nudge-back-' : 'nudge-fwd-') + deck);
+      if (b) { b.classList.add('hit'); setTimeout(function () { b.classList.remove('hit'); }, 120); }
+    }
+
+    // ── Phase meter + debug ─────────────────────────────────────────────────
+    function driftFor(d) {
+      var o = other(d);
+      if (!timing[d].normBpm || !timing[o].normBpm) return 0;
+      var x = timing[d].beatPhase - timing[o].beatPhase;
+      x = ((x + 0.5) % 1 + 1) % 1 - 0.5;
+      return x * ((timing[d].beatDurMs + timing[o].beatDurMs) / 2);
+    }
+
+    function updatePhaseMeter() {
+      var needle = el('phase-needle'), read = el('phase-readout'), roles = el('phase-roles');
+      var ok = deckType.a === 'audio' && deckType.b === 'audio' &&
+               timing.a.normBpm && timing.b.normBpm &&
+               states.a === 'playing' && states.b === 'playing';
+      if (!ok) {
+        needle.style.left = '50%';
+        needle.classList.remove('hot');
+        read.textContent = '— · —';
+        roles.textContent = masterDeck ? ('master ' + masterDeck.toUpperCase()) : '';
+        return;
+      }
+      var ref = masterDeck || 'a';
+      var fol = other(ref);
+      var d = timing[fol].beatPhase - timing[ref].beatPhase;
+      d = ((d + 0.5) % 1 + 1) % 1 - 0.5;
+      var beatMs = (timing[ref].beatDurMs + timing[fol].beatDurMs) / 2;
+      var driftMs = d * beatMs;
+      needle.style.left = (50 + Math.max(-1, Math.min(1, d * 2)) * 48) + '%';
+      needle.classList.toggle('hot', Math.abs(driftMs) > 30);
+      read.textContent = (driftMs >= 0 ? '+' : '') + driftMs.toFixed(0) + ' ms ' +
+        (Math.abs(driftMs) < 12 ? '· SYNCED' : (driftMs > 0 ? '· ' + fol.toUpperCase() + ' early' : '· ' + fol.toUpperCase() + ' late'));
+      roles.textContent = 'master ' + ref.toUpperCase() + ' · follower ' + fol.toUpperCase();
+    }
+
+    function debugText(t) {
+      return 'bpm norm : ' + (t.normBpm ? t.normBpm.toFixed(2) : '—') + '\n' +
+             'bpm raw  : ' + (t.detectedBpm ? t.detectedBpm.toFixed(2) : '—') + '\n' +
+             'bpm eff  : ' + (t.effBpm ? t.effBpm.toFixed(2) : '—') + '\n' +
+             'rate     : ' + t.rate.toFixed(4) + '\n' +
+             'time     : ' + t.currentTime.toFixed(3) + ' s\n' +
+             'duration : ' + (t.duration ? t.duration.toFixed(1) : '—') + ' s\n' +
+             'beat #   : ' + t.currentBeat + '\n' +
+             'phase    : ' + t.beatPhase.toFixed(3) + '\n' +
+             'beatDur  : ' + (t.beatDurMs ? t.beatDurMs.toFixed(1) : '—') + ' ms\n' +
+             'role     : ' + (t.master ? 'MASTER' : (t.follower ? 'follower' : '—'));
+    }
+
+    function updateDebug() {
+      if (!el('debug-chk').checked) return;
+      el('dbg-a').textContent = debugText(timing.a) + '\ndrift vs B: ' + driftFor('a').toFixed(1) + ' ms';
+      el('dbg-b').textContent = debugText(timing.b) + '\ndrift vs A: ' + driftFor('b').toFixed(1) + ' ms';
+    }
+
+    // ── Single rAF loop driving all live timing ─────────────────────────────
+    function tickTiming() {
+      ['a', 'b'].forEach(function (deck) {
+        var t = timing[deck];
+        if (deckType[deck] === 'audio' && t.normBpm) {
+          var ct   = getDeckTime(deck);
+          var rate = getDeckRate(deck);
+          t.rate = rate;
+          t.currentTime = ct;
+          t.duration = getDeckDuration(deck);
+          t.effBpm = t.normBpm * rate;
+          var bd = t.beatDurSource || (60 / t.normBpm);
+          var bf = (ct - t.beatOffset) / bd;
+          t.currentBeat = Math.floor(bf);
+          var ph = bf - Math.floor(bf); if (ph < 0) ph += 1;
+          t.beatPhase = ph;
+          t.beatDurMs = (60 / t.effBpm) * 1000;
+          el('bpm-' + deck).textContent = t.effBpm.toFixed(1);
+          el('bpm-sub-' + deck).textContent = 'det ' + Math.round(t.normBpm) + ' · eff ' + t.effBpm.toFixed(1);
+          if (states[deck] === 'playing') updateActiveBeat(deck, t.currentBeat);
+        } else {
+          t.effBpm = null;
+        }
+      });
+      lockSync();
+      updatePhaseMeter();
+      updateDebug();
+      requestAnimationFrame(tickTiming);
+    }
+
+    // Continuous phase-lock: gently trim the follower's playback rate so its
+    // beat phase converges to the master's and stays there (no audible seeks).
+    var lockFrame = 0;
+    function lockSync() {
+      if (!masterDeck) return;
+      var m = masterDeck, f = other(m);
+      if (!timing[f].follower) return;
+      if (states[m] !== 'playing' || states[f] !== 'playing') return;
+      if (deckType[m] !== 'audio' || deckType[f] !== 'audio' || !timing[m].normBpm || !timing[f].normBpm) return;
+      lockFrame++;
+      if (lockFrame % 6 !== 0) return; // ~10 Hz is plenty
+      var d = timing[f].beatPhase - timing[m].beatPhase;
+      d = ((d + 0.5) % 1 + 1) % 1 - 0.5;           // signed beats, (-0.5, 0.5]
+      var trim;
+      if (Math.abs(d * timing[f].beatDurMs) < 4) {  // deadband — hold steady, no wobble
+        trim = 1;
+      } else {
+        trim = 1 - 0.6 * d;                          // ahead → slow, behind → speed up
+        trim = Math.max(0.97, Math.min(1.03, trim)); // cap at ±3 %
+      }
+      if (Math.abs(trim - (timing[f].syncTrim || 1)) > 0.0008) {
+        timing[f].syncTrim = trim;
+        applyTempo(f);
+      }
+    }
+
+    function startTimingLoop() { requestAnimationFrame(tickTiming); }
+
+    function wireBeatControls() {
+      ['a', 'b'].forEach(function (deck) {
+        el('sync-' + deck).addEventListener('click', function () { ensureAudioContextResumed(); syncDeck(deck); });
+        el('nudge-back-' + deck).addEventListener('click', function () { nudge(deck, -0.03); });
+        el('nudge-fwd-' + deck).addEventListener('click', function () { nudge(deck, 0.03); });
+      });
+      document.addEventListener('keydown', function (e) {
+        var tag = (document.activeElement && document.activeElement.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        switch (e.key.toLowerCase()) {
+          case 'q': nudge('a', -0.03); e.preventDefault(); break;
+          case 'w': nudge('a',  0.03); e.preventDefault(); break;
+          case 'o': nudge('b', -0.03); e.preventDefault(); break;
+          case 'p': nudge('b',  0.03); e.preventDefault(); break;
+        }
+      });
+      el('debug-chk').addEventListener('change', function () {
+        el('debug-panel').classList.toggle('open', this.checked);
+      });
+    }
+
+    // ── Procedural demo loops (exact BPM, beat 1 at t=0 → deterministic sync) ─
+    function makeNoiseBuffer(ctx, dur) {
+      var n = Math.floor(ctx.sampleRate * dur);
+      var b = ctx.createBuffer(1, n, ctx.sampleRate);
+      var d = b.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      return b;
+    }
+    function envGain(ctx, t, peak, dur) {
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      return g;
+    }
+    function kick(ctx, t) {
+      var o = ctx.createOscillator(), g = envGain(ctx, t, 0.9, 0.18);
+      o.frequency.setValueAtTime(150, t);
+      o.frequency.exponentialRampToValueAtTime(50, t + 0.11);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.2);
+    }
+    function snare(ctx, noise, t) {
+      var s = ctx.createBufferSource(); s.buffer = noise;
+      var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1200;
+      var g = envGain(ctx, t, 0.6, 0.16);
+      s.connect(hp).connect(g).connect(ctx.destination); s.start(t); s.stop(t + 0.2);
+      var o = ctx.createOscillator(), g2 = envGain(ctx, t, 0.3, 0.11); o.type = 'triangle'; o.frequency.value = 180;
+      o.connect(g2).connect(ctx.destination); o.start(t); o.stop(t + 0.13);
+    }
+    function hat(ctx, noise, t) {
+      var s = ctx.createBufferSource(); s.buffer = noise;
+      var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+      var g = envGain(ctx, t, 0.25, 0.04);
+      s.connect(hp).connect(g).connect(ctx.destination); s.start(t); s.stop(t + 0.06);
+    }
+    function bass(ctx, t, dur, freq) {
+      var o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = freq; lp.type = 'lowpass'; lp.frequency.value = 500;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.26, t + 0.02);
+      g.gain.setValueAtTime(0.26, t + dur * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(lp).connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+    }
+
+    function encodeWAV(buffer) {
+      var ch = buffer.getChannelData(0), sr = buffer.sampleRate, n = ch.length;
+      var ab = new ArrayBuffer(44 + n * 2), v = new DataView(ab);
+      function str(off, s) { for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); }
+      str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+      str(36, 'data'); v.setUint32(40, n * 2, true);
+      var off = 44;
+      for (var i = 0; i < n; i++) { var s = Math.max(-1, Math.min(1, ch[i])); v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2; }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    function generateDemoBlob(variant, bpm, seconds) {
+      var sr = 22050;
+      var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if (!OAC) return Promise.reject(new Error('No OfflineAudioContext'));
+      var ctx = new OAC(1, Math.ceil(seconds * sr), sr);
+      var noise = makeNoiseBuffer(ctx, 0.3);
+      var beatDur = 60 / bpm;
+      var totalBeats = Math.floor(seconds / beatDur);
+      var bassSeq = variant === 'a' ? [55.00, 55.00, 73.42, 65.41] : [61.74, 61.74, 49.00, 55.00];
+      for (var i = 0; i < totalBeats; i++) {
+        var t = i * beatDur, inBar = i % 4;
+        kick(ctx, t);
+        if (inBar === 1 || inBar === 3) snare(ctx, noise, t);
+        hat(ctx, noise, t + beatDur / 2);
+        if (variant === 'b' && inBar % 2 === 0) hat(ctx, noise, t + beatDur * 0.75);
+        bass(ctx, t, beatDur * 0.9, bassSeq[inBar]);
+      }
+      return ctx.startRendering().then(function (buf) { return URL.createObjectURL(encodeWAV(buf)); });
+    }
+
+    function loadDemo(deck) {
+      var meta = DEMO_META[deck];
+      setState(deck, 'loading');
+      var msg = el('overlay-' + deck).querySelector('.overlay-msg');
+      if (msg) msg.textContent = 'Building beat loop…';
+      var ready = demoCache[deck]
+        ? Promise.resolve(demoCache[deck])
+        : generateDemoBlob(deck, meta.bpm, meta.seconds).then(function (url) { demoCache[deck] = url; return url; });
+      ready.then(function (url) {
+        loadAudio(deck, url, meta.name, { knownBpm: meta.bpm, beatOffset: 0 });
+      }).catch(function (e) {
+        console.error('[DJ Mixer] demo generation failed, using fallback track', e);
+        loadAudio(deck, DEMOS[deck].src, DEMOS[deck].name);
+      });
+    }
+
+    // ── iOS / autoplay: resume audio on first user gesture ──────────────────
+    var sharedCtx = null, audioUnlocked = false;
+    function ensureAudioContextResumed() {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC && !sharedCtx) sharedCtx = new AC();
+        if (sharedCtx && sharedCtx.state === 'suspended') sharedCtx.resume();
+      } catch (e) {}
+      audioUnlocked = true;
+    }
+    function showTapToStart(deck) {
+      var ov = el('overlay-' + deck);
+      var msg = ov.querySelector('.overlay-msg');
+      var icon = ov.querySelector('.overlay-icon');
+      if (icon) icon.textContent = '👆';
+      if (msg) msg.textContent = 'Tap Play to start audio';
+      ov.classList.remove('hidden', 'loading');
+      el('yt-link-' + deck).style.display = 'none';
+      if (states[deck] !== 'error') states[deck] = 'ready';
+    }
+
+    // ── Orientation (mobile) ────────────────────────────────────────────────
+    function updateOrientation() {
+      var portrait = window.matchMedia('(max-width: 932px) and (orientation: portrait)').matches;
+      document.body.classList.toggle('force-rotate', portrait);
     }
 
     // ── Bootstrap ─────────────────────────────────────────────────────────
@@ -1545,8 +2368,20 @@
     };
 
     wireControls();
-    loadAudio('a', DEMOS.a.src, DEMOS.a.name);
-    loadAudio('b', DEMOS.b.src, DEMOS.b.name);
+    wireBeatControls();
+    startTimingLoop();
+
+    // Resume audio on the very first user gesture (iOS autoplay policy)
+    window.addEventListener('pointerdown', ensureAudioContextResumed, { once: true });
+    window.addEventListener('touchstart',  ensureAudioContextResumed, { once: true });
+
+    // Orientation handling for mobile
+    updateOrientation();
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('orientationchange', updateOrientation);
+
+    loadDemo('a');
+    loadDemo('b');
 
     // Fallback: if YT API already loaded (e.g. cached page), process queued YouTube loads.
     if (isYouTubeReady()) {
