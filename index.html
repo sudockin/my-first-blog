@@ -951,7 +951,10 @@
 
     // ── State ─────────────────────────────────────────────────────────────
     var ytPlayers      = { a: null, b: null }; // YT.Player
-    var waveEls        = { a: null, b: null }; // WaveSurfer
+    var waveEls        = { a: null, b: null }; // WaveSurfer (waveform + BPM)
+    var mediaEls       = { a: null, b: null }; // HTMLAudioElement fallback (CORS-less audio)
+    var audioEngine    = { a: null, b: null }; // 'wave' | 'media' (when deckType==='audio')
+    var wsPendingSrc   = { a: null, b: null }; // remembers src so we can fall back on WaveSurfer error
     var deckType       = { a: 'audio', b: 'audio' }; // 'youtube' | 'audio'
     var vidIds         = { a: null, b: null };
     var pendingYTLoads = { a: null, b: null };
@@ -1051,6 +1054,15 @@
     }
 
     // ── Volume / crossfader ───────────────────────────────────────────────
+    function setAudioVolume(deck, v) {
+      v = Math.max(0, Math.min(1, v));
+      if (audioEngine[deck] === 'media') {
+        if (mediaEls[deck]) { try { mediaEls[deck].volume = v; } catch(e) {} }
+      } else {
+        if (waveEls[deck]) { try { waveEls[deck].setVolume(v); } catch(e) {} }
+      }
+    }
+
     function applyMix() {
       var t  = parseInt(el('crossfader').value) / 100;
       var vA = parseInt(el('vol-a').value) / 100;
@@ -1059,13 +1071,13 @@
       if (deckType.a === 'youtube') {
         try { if (ytPlayers.a && ytPlayers.a.setVolume) ytPlayers.a.setVolume(Math.round(vA * (1 - t) * 100)); } catch(e) {}
       } else {
-        try { if (waveEls.a) waveEls.a.setVolume(vA * (1 - t)); } catch(e) {}
+        setAudioVolume('a', vA * (1 - t));
       }
 
       if (deckType.b === 'youtube') {
         try { if (ytPlayers.b && ytPlayers.b.setVolume) ytPlayers.b.setVolume(Math.round(vB * t * 100)); } catch(e) {}
       } else {
-        try { if (waveEls.b) waveEls.b.setVolume(vB * t); } catch(e) {}
+        setAudioVolume('b', vB * t);
       }
     }
 
@@ -1152,8 +1164,18 @@
     }
 
     // ── Mode switching ────────────────────────────────────────────────────
-    function enterYouTubeMode(deck) {
+    function stopAudioEngines(deck) {
       if (waveEls[deck]) { try { waveEls[deck].destroy(); } catch(e) {} waveEls[deck] = null; }
+      if (mediaEls[deck]) {
+        try { mediaEls[deck].pause(); mediaEls[deck].removeAttribute('src'); mediaEls[deck].load(); } catch(e) {}
+        mediaEls[deck] = null;
+      }
+      wsPendingSrc[deck] = null;
+      audioEngine[deck] = null;
+    }
+
+    function enterYouTubeMode(deck) {
+      stopAudioEngines(deck);
       el('audio-vis-' + deck).style.display = 'none';
       el('tempo-row-' + deck).classList.add('yt-mode');
       deckType[deck] = 'youtube';
@@ -1271,6 +1293,8 @@
     // ── WaveSurfer / audio ────────────────────────────────────────────────
     function wireWaveEvents(deck, ws) {
       ws.on('ready', function () {
+        audioEngine[deck] = 'wave';
+        wsPendingSrc[deck] = null;
         clearLoadTimer(deck);
         setState(deck, 'ready');
         applyMix();
@@ -1291,11 +1315,16 @@
       ws.on('pause',  function () { if (states[deck] !== 'error') setState(deck, 'ready'); });
       ws.on('finish', function () { setState(deck, 'ready'); });
 
+      // WaveSurfer must FETCH the audio to draw a waveform — that needs CORS.
+      // Many audio hosts (incl. the demo tracks) don't send CORS headers, so
+      // the fetch fails even though the browser can still PLAY the file.
+      // Fall back to a plain <audio> element instead of erroring out.
       ws.on('error', function (err) {
-        clearLoadTimer(deck);
-        console.error('[DJ Mixer] WaveSurfer deck ' + deck + ':', err);
-        failedUrls.push({ deck: deck, error: String(err) });
-        setState(deck, 'error', 'Audio failed to load.\nCheck the URL or try another file.');
+        if (!wsPendingSrc[deck]) return; // already ready / handled
+        var pending = wsPendingSrc[deck];
+        console.warn('[DJ Mixer] Deck ' + deck.toUpperCase() + ' WaveSurfer failed (likely CORS) — using direct audio:', err);
+        failedUrls.push({ deck: deck, src: pending.url, error: String(err), fallback: 'media' });
+        fallbackToMedia(deck, pending.url, pending.name);
       });
     }
 
@@ -1315,22 +1344,75 @@
       return ws;
     }
 
+    // Plain HTMLAudioElement playback — works for cross-origin audio without
+    // CORS (no waveform / auto-BPM, but tempo + tap tempo still work).
+    function wireMediaEvents(deck, audio) {
+      audio.addEventListener('canplay', function () {
+        clearLoadTimer(deck);
+        setState(deck, 'ready');
+        applyMix();
+        applyTempo(deck);
+      });
+      audio.addEventListener('playing', function () { setState(deck, 'playing'); });
+      audio.addEventListener('pause',   function () { if (states[deck] !== 'error') setState(deck, 'ready'); });
+      audio.addEventListener('ended',   function () { setState(deck, 'ready'); });
+      audio.addEventListener('error',   function () {
+        clearLoadTimer(deck);
+        var code = audio.error ? audio.error.code : '?';
+        failedUrls.push({ deck: deck, src: audio.src, mediaErrorCode: code });
+        setState(deck, 'error', 'Audio failed to load.\nCheck the URL or try another file.');
+      });
+    }
+
+    function fallbackToMedia(deck, url, name) {
+      if (audioEngine[deck] === 'media') return; // already fell back
+      wsPendingSrc[deck] = null;
+      if (waveEls[deck]) { try { waveEls[deck].destroy(); } catch(e) {} waveEls[deck] = null; }
+      el('waveform-' + deck).style.display = 'none'; // hide empty canvas; track name remains
+      audioEngine[deck] = 'media';
+
+      var audio = mediaEls[deck];
+      if (!audio) {
+        audio = new Audio();
+        mediaEls[deck] = audio;
+        wireMediaEvents(deck, audio);
+      }
+      setState(deck, 'loading');
+      armLoadTimer(deck);
+      try { audio.src = url; audio.load(); }
+      catch (err) {
+        clearLoadTimer(deck);
+        setState(deck, 'error', 'Audio failed to load.\nCheck the URL or try another file.');
+      }
+    }
+
     function loadAudio(deck, src, name) {
       enterAudioMode(deck);
-      el('track-name-' + deck).textContent = name || (typeof src === 'string' ? src.split('/').pop().split('?')[0] : src.name);
+      stopAudioEngines(deck); // clear whatever this deck was running before
+      var url   = (typeof src === 'string') ? src : URL.createObjectURL(src);
+      var label = name || (typeof src === 'string' ? src.split('/').pop().split('?')[0] : src.name);
+
+      el('track-name-' + deck).textContent = label;
+      el('waveform-' + deck).style.display = ''; // restore (may have been hidden by a prior fallback)
       detectedBPM[deck] = null;
       tapArrays[deck] = [];
       setBPMDisplay(deck, null);
       setState(deck, 'loading');
       armLoadTimer(deck);
 
+      // Try WaveSurfer first (waveform + BPM); fall back to <audio> on CORS error.
+      wsPendingSrc[deck] = { url: url, name: label };
+      audioEngine[deck] = 'wave';
       var ws = ensureWave(deck);
       try {
-        ws.load(typeof src === 'string' ? src : URL.createObjectURL(src));
+        var p = ws.load(url);
+        if (p && typeof p.catch === 'function') {
+          p.catch(function (err) {
+            if (wsPendingSrc[deck]) fallbackToMedia(deck, url, label);
+          });
+        }
       } catch (err) {
-        clearLoadTimer(deck);
-        console.error('[DJ Mixer] WaveSurfer load failed deck ' + deck, err);
-        setState(deck, 'error', 'Could not load audio. Try another file.');
+        fallbackToMedia(deck, url, label);
       }
     }
 
@@ -1339,8 +1421,21 @@
       var pct  = parseFloat(el('tempo-' + deck).value) || 0;
       var rate = 1 + pct / 100;
       el('tempo-pct-' + deck).textContent = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
-      var ws = waveEls[deck];
-      if (ws) { try { ws.setPlaybackRate(rate, false); } catch(e) {} }
+      if (audioEngine[deck] === 'media') {
+        var audio = mediaEls[deck];
+        if (audio) {
+          try {
+            audio.playbackRate = rate;
+            // Let pitch follow tempo (turntable behaviour)
+            audio.preservesPitch = false;
+            audio.mozPreservesPitch = false;
+            audio.webkitPreservesPitch = false;
+          } catch(e) {}
+        }
+      } else {
+        var ws = waveEls[deck];
+        if (ws) { try { ws.setPlaybackRate(rate, false); } catch(e) {} }
+      }
     }
 
     // ── Controls ──────────────────────────────────────────────────────────
@@ -1384,10 +1479,20 @@
         // Play / Pause
         el('play-' + deck).addEventListener('click', function () {
           if (deckType[deck] === 'audio') {
-            var ws = waveEls[deck];
-            if (!ws) return;
-            try { ws.playPause(); } catch(e) {
-              setState(deck, 'error', 'Playback blocked. Try clicking again.');
+            if (audioEngine[deck] === 'media') {
+              var audio = mediaEls[deck];
+              if (!audio) return;
+              if (audio.paused) {
+                audio.play().catch(function () { setState(deck, 'ready'); });
+              } else {
+                audio.pause();
+              }
+            } else {
+              var ws = waveEls[deck];
+              if (!ws) return;
+              try { ws.playPause(); } catch(e) {
+                setState(deck, 'error', 'Playback blocked. Try clicking again.');
+              }
             }
           } else {
             var player = ytPlayers[deck];
