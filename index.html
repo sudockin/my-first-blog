@@ -931,10 +931,12 @@
       document.getElementById('file-warning').style.display = 'block';
     }
 
-    // Royalty-free demo tracks (SoundHelix — free sample audio)
+    // Royalty-free demo tracks (Kevin MacLeod, CC-BY, via archive.org).
+    // These hosts send `Access-Control-Allow-Origin: *`, so WaveSurfer can
+    // fetch + decode them for a real waveform and BPM detection.
     var DEMOS = {
-      a: { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', name: 'SoundHelix - Demo Track 1' },
-      b: { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', name: 'SoundHelix - Demo Track 9' }
+      a: { src: 'https://archive.org/download/feelingoodbykevinmacleod1/feelin-good-by-kevin-macleod%20(1).mp3', name: "Feelin' Good — Kevin MacLeod" },
+      b: { src: 'https://archive.org/download/verano-sensual-by-kevin-macleod/verano-sensual-by-kevin-macleod.mp3', name: 'Verano Sensual — Kevin MacLeod' }
     };
 
     var AUDIO_EXTS   = /\.(mp3|ogg|wav|flac|m4a|aac|opus|webm)(\?.*)?$/i;
