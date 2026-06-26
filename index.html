@@ -47,9 +47,7 @@
       max-width: 1100px;
     }
 
-    @media (max-width: 760px) {
-      .console { flex-direction: column; }
-    }
+    @media (max-width: 760px) { .console { flex-direction: column; } }
 
     /* ── Deck ─────────────────────────────── */
     .deck {
@@ -59,14 +57,13 @@
       padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
       border: 1px solid transparent;
     }
 
     #deck-a { border-color: #00ffff33; box-shadow: 0 0 20px #00ffff0d; }
     #deck-b { border-color: #ff00ff33; box-shadow: 0 0 20px #ff00ff0d; }
 
-    /* ── Deck header (label + state badge) ── */
     .deck-header {
       display: flex;
       align-items: center;
@@ -99,7 +96,7 @@
     .state-badge[data-state="playing"] { background: #003322; color: #00ff88; }
     .state-badge[data-state="error"]   { background: #2a0011; color: #ff4455; }
 
-    /* ── Video frame + overlay ────────────── */
+    /* ── Video / audio area ───────────────── */
     .video-wrap {
       position: relative;
       width: 100%;
@@ -117,6 +114,66 @@
       border: none;
     }
 
+    /* Audio visual (shown instead of YT iframe) */
+    .audio-visual {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: linear-gradient(135deg, #080818, #0d0d22);
+      border-radius: 8px;
+    }
+
+    .eq-bars {
+      display: flex;
+      gap: 5px;
+      align-items: flex-end;
+      height: 52px;
+    }
+
+    .eq-bars span {
+      width: 7px;
+      border-radius: 3px 3px 0 0;
+      transform-origin: bottom;
+      animation: eq 0.7s ease-in-out infinite alternate;
+      animation-play-state: paused;
+      opacity: 0.5;
+    }
+
+    .audio-visual.playing .eq-bars span { animation-play-state: running; opacity: 1; }
+
+    #deck-a .eq-bars span { background: var(--cyan);    box-shadow: 0 0 6px var(--cyan); }
+    #deck-b .eq-bars span { background: var(--magenta); box-shadow: 0 0 6px var(--magenta); }
+
+    .eq-bars span:nth-child(1) { height: 35%; animation-delay: 0.0s; }
+    .eq-bars span:nth-child(2) { height: 65%; animation-delay: 0.2s; }
+    .eq-bars span:nth-child(3) { height: 85%; animation-delay: 0.05s; }
+    .eq-bars span:nth-child(4) { height: 50%; animation-delay: 0.15s; }
+    .eq-bars span:nth-child(5) { height: 75%; animation-delay: 0.1s; }
+    .eq-bars span:nth-child(6) { height: 45%; animation-delay: 0.25s; }
+    .eq-bars span:nth-child(7) { height: 60%; animation-delay: 0.08s; }
+
+    @keyframes eq {
+      from { transform: scaleY(0.25); }
+      to   { transform: scaleY(1.0); }
+    }
+
+    .track-name {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: #8888bb;
+      text-align: center;
+      padding: 0 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    /* ── Deck overlay ─────────────────────── */
     .deck-overlay {
       position: absolute;
       inset: 0;
@@ -130,12 +187,10 @@
       z-index: 10;
       padding: 16px;
       text-align: center;
-      transition: opacity 0.25s;
     }
 
     .deck-overlay.hidden { display: none; }
 
-    /* spinner (shown only during loading) */
     .overlay-spinner {
       display: none;
       width: 30px; height: 30px;
@@ -146,7 +201,6 @@
     }
 
     #deck-b .overlay-spinner { border-top-color: var(--magenta); }
-
     .deck-overlay.loading .overlay-spinner { display: block; }
     .deck-overlay.loading .overlay-icon    { display: none; }
 
@@ -159,7 +213,7 @@
       color: #9999bb;
       line-height: 1.5;
       white-space: pre-line;
-      max-width: 220px;
+      max-width: 230px;
     }
 
     .overlay-yt-link {
@@ -221,6 +275,33 @@
     #deck-b .btn-load { border-color: var(--magenta); color: var(--magenta); }
     #deck-b .btn-load:hover { background: #ff00ff18; box-shadow: 0 0 10px #ff00ff44; }
 
+    /* ── Source hint ──────────────────────── */
+    .source-hint {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ── Extra row (File + Demo) ──────────── */
+    .extra-row { display: flex; gap: 8px; }
+
+    .btn-extra {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 7px;
+      font: inherit;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      border: 1px solid #333355;
+      background: #0d0d20;
+      color: #8888cc;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .btn-extra:hover { background: #12122a; border-color: #555588; color: var(--text); }
+
     /* ── Play/Pause ───────────────────────── */
     .btn-play {
       width: 100%;
@@ -274,29 +355,21 @@
       -webkit-appearance: none;
       width: 16px; height: 16px;
       border-radius: 50%;
-      background: var(--cyan);
-      box-shadow: 0 0 7px var(--cyan);
+      background: var(--cyan); box-shadow: 0 0 7px var(--cyan);
     }
     #deck-a input[type="range"]::-moz-range-thumb {
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: var(--cyan);
-      box-shadow: 0 0 7px var(--cyan);
-      border: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 7px var(--cyan); border: none;
     }
     #deck-b input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 16px; height: 16px;
       border-radius: 50%;
-      background: var(--magenta);
-      box-shadow: 0 0 7px var(--magenta);
+      background: var(--magenta); box-shadow: 0 0 7px var(--magenta);
     }
     #deck-b input[type="range"]::-moz-range-thumb {
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: var(--magenta);
-      box-shadow: 0 0 7px var(--magenta);
-      border: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--magenta); box-shadow: 0 0 7px var(--magenta); border: none;
     }
 
     /* ── Crossfader ───────────────────────── */
@@ -310,9 +383,7 @@
       min-width: 110px;
     }
 
-    @media (max-width: 760px) {
-      .crossfader-section { padding: 12px 0; width: 100%; }
-    }
+    @media (max-width: 760px) { .crossfader-section { padding: 12px 0; width: 100%; } }
 
     .cf-ab {
       display: flex;
@@ -349,8 +420,7 @@
       border-radius: 5px;
       background: #d0d0ff;
       box-shadow: 0 0 10px #aaaaff88;
-      border: none;
-      cursor: grab;
+      border: none; cursor: grab;
     }
 
     .cf-label {
@@ -367,13 +437,13 @@
 
   <div id="file-warning" style="display:none;background:#1a0a00;border:1px solid #ff6600;color:#ffaa44;border-radius:10px;padding:16px 20px;margin-bottom:24px;max-width:700px;width:100%;font-size:0.85rem;line-height:1.6;text-align:center;">
     <strong style="color:#ff8800;">YouTube requires HTTP — open via a server, not file://</strong><br>
-    Run in your terminal: <code style="background:#0a0a00;padding:4px 10px;border-radius:5px;color:#ffcc88;">cd /path/to/folder &amp;&amp; python3 -m http.server 8080</code><br>
-    Then open <strong>http://localhost:8080/index.html</strong>
+    Run: <code style="background:#0a0a00;padding:4px 10px;border-radius:5px;color:#ffcc88;">cd /path/to/folder &amp;&amp; python3 -m http.server 8080</code>
+    then open <strong>http://localhost:8080/index.html</strong> — or use the 📁 File or ▶ Demo buttons below which work offline.
   </div>
 
   <div class="console">
 
-    <!-- Deck A -->
+    <!-- ── Deck A ── -->
     <div class="deck" id="deck-a">
       <div class="deck-header">
         <div class="deck-label">Deck A</div>
@@ -381,7 +451,14 @@
       </div>
       <div class="video-wrap">
         <div id="player-a"></div>
-        <div class="deck-overlay" id="overlay-a">
+        <div class="audio-visual" id="audio-vis-a">
+          <div class="eq-bars">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+          <div class="track-name" id="track-name-a">No track loaded</div>
+        </div>
+        <div class="deck-overlay loading" id="overlay-a">
           <div class="overlay-spinner"></div>
           <span class="overlay-icon">🎵</span>
           <span class="overlay-msg">Loading default track…</span>
@@ -389,8 +466,14 @@
         </div>
       </div>
       <div class="url-row">
-        <input id="url-a" type="text" placeholder="Paste YouTube URL or video ID">
+        <input id="url-a" type="text" placeholder="YouTube URL or audio URL (.mp3 etc)">
         <button class="btn-load" id="load-a">Load</button>
+      </div>
+      <div class="source-hint">YouTube · audio URL · local file · demo</div>
+      <div class="extra-row">
+        <input type="file" id="file-input-a" accept="audio/*" style="display:none">
+        <button class="btn-extra" id="btn-file-a">📁 Upload File</button>
+        <button class="btn-extra" id="btn-demo-a">▶ Demo Track</button>
       </div>
       <button class="btn-play" id="play-a" disabled>Play</button>
       <div class="vol-row">
@@ -399,14 +482,14 @@
       </div>
     </div>
 
-    <!-- Crossfader -->
+    <!-- ── Crossfader ── -->
     <div class="crossfader-section">
       <div class="cf-ab"><span>A</span><span>B</span></div>
       <input type="range" id="crossfader" min="0" max="100" value="50">
       <div class="cf-label">Crossfader</div>
     </div>
 
-    <!-- Deck B -->
+    <!-- ── Deck B ── -->
     <div class="deck" id="deck-b">
       <div class="deck-header">
         <div class="deck-label">Deck B</div>
@@ -414,7 +497,14 @@
       </div>
       <div class="video-wrap">
         <div id="player-b"></div>
-        <div class="deck-overlay" id="overlay-b">
+        <div class="audio-visual" id="audio-vis-b">
+          <div class="eq-bars">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+          <div class="track-name" id="track-name-b">No track loaded</div>
+        </div>
+        <div class="deck-overlay loading" id="overlay-b">
           <div class="overlay-spinner"></div>
           <span class="overlay-icon">🎵</span>
           <span class="overlay-msg">Loading default track…</span>
@@ -422,8 +512,14 @@
         </div>
       </div>
       <div class="url-row">
-        <input id="url-b" type="text" placeholder="Paste YouTube URL or video ID">
+        <input id="url-b" type="text" placeholder="YouTube URL or audio URL (.mp3 etc)">
         <button class="btn-load" id="load-b">Load</button>
+      </div>
+      <div class="source-hint">YouTube · audio URL · local file · demo</div>
+      <div class="extra-row">
+        <input type="file" id="file-input-b" accept="audio/*" style="display:none">
+        <button class="btn-extra" id="btn-file-b">📁 Upload File</button>
+        <button class="btn-extra" id="btn-demo-b">▶ Demo Track</button>
       </div>
       <button class="btn-play" id="play-b" disabled>Play</button>
       <div class="vol-row">
@@ -443,15 +539,23 @@
       document.getElementById('file-warning').style.display = 'block';
     }
 
-    // ── Config ───────────────────────────────────────────────────────────
-    var DEFAULTS = {
+    // ── Config ────────────────────────────────────────────────────────────
+    var YT_DEFAULTS = {
       a: 'GI_P2FRnBRE', // Daft Punk – Around the World
       b: 'y6120QOlsfU'  // Darude – Sandstorm
     };
 
-    var LOAD_TIMEOUT_MS = 12000;
+    // Royalty-free demo tracks (SoundHelix — free sample audio)
+    var DEMOS = {
+      a: { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',  name: 'SoundHelix — Demo Track 1' },
+      b: { src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',  name: 'SoundHelix — Demo Track 9' }
+    };
 
-    var ERROR_MSGS = {
+    var AUDIO_EXTS   = /\.(mp3|ogg|wav|flac|m4a|aac|opus|webm)(\?.*)?$/i;
+    var LOAD_TIMEOUT = 12000; // ms before declaring load failure
+    var PLAY_CHECK   = 3500;  // ms after playVideo() to verify buffering started
+
+    var YT_ERRORS = {
       2:   'Invalid video — check the URL and try again.',
       5:   'This video can\'t play in this browser.',
       100: 'Video not found — it may have been removed.',
@@ -459,33 +563,60 @@
       150: 'This video can\'t be embedded here.\nTry another URL or open in YouTube.'
     };
 
-    // ── State ────────────────────────────────────────────────────────────
-    var players  = { a: null, b: null };
-    var vidIds   = { a: DEFAULTS.a, b: DEFAULTS.b };
-    var timeouts = { a: null, b: null };
-    // possible states: idle | loading | ready | playing | error
-    var states   = { a: 'idle', b: 'idle' };
+    // ── State ─────────────────────────────────────────────────────────────
+    var ytPlayers    = { a: null, b: null };
+    var audioEls     = { a: null, b: null };
+    var deckType     = { a: 'youtube', b: 'youtube' }; // 'youtube' | 'audio'
+    var vidIds       = { a: YT_DEFAULTS.a, b: YT_DEFAULTS.b };
+    var loadTimers   = { a: null, b: null };
+    var playTimers   = { a: null, b: null };
+    var states       = { a: 'idle', b: 'idle' };
+    var failedUrls   = []; // debug log
 
     // ── Helpers ───────────────────────────────────────────────────────────
     function el(id) { return document.getElementById(id); }
 
     function extractVideoId(raw) {
-      if (!raw || !raw.trim()) return null;
       var s = raw.trim();
-      var m = s.match(
-        /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
-      );
+      var m = s.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
       if (m) return m[1];
       if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
       return null;
     }
 
+    function classifyInput(raw) {
+      if (!raw || !raw.trim()) return null;
+      var s = raw.trim();
+      if (AUDIO_EXTS.test(s)) return { type: 'audio', src: s, name: s.split('/').pop().split('?')[0] };
+      var id = extractVideoId(s);
+      if (id) return { type: 'youtube', id: id };
+      return null;
+    }
+
+    function flashInvalid(input) {
+      input.classList.remove('invalid');
+      void input.offsetWidth;
+      input.classList.add('invalid');
+      setTimeout(function () { input.classList.remove('invalid'); }, 600);
+    }
+
+    // ── Volume / crossfader ───────────────────────────────────────────────
     function applyMix() {
       var t  = parseInt(el('crossfader').value) / 100;
       var vA = parseInt(el('vol-a').value);
       var vB = parseInt(el('vol-b').value);
-      try { if (players.a && players.a.setVolume) players.a.setVolume(Math.round(vA * (1 - t))); } catch (e) {}
-      try { if (players.b && players.b.setVolume) players.b.setVolume(Math.round(vB * t)); } catch (e) {}
+
+      if (deckType.a === 'youtube') {
+        try { if (ytPlayers.a && ytPlayers.a.setVolume) ytPlayers.a.setVolume(Math.round(vA * (1 - t))); } catch(e) {}
+      } else {
+        try { if (audioEls.a) audioEls.a.volume = (vA / 100) * (1 - t); } catch(e) {}
+      }
+
+      if (deckType.b === 'youtube') {
+        try { if (ytPlayers.b && ytPlayers.b.setVolume) ytPlayers.b.setVolume(Math.round(vB * t)); } catch(e) {}
+      } else {
+        try { if (audioEls.b) audioEls.b.volume = (vB / 100) * t; } catch(e) {}
+      }
     }
 
     // ── State machine ─────────────────────────────────────────────────────
@@ -498,11 +629,11 @@
       var ytLink  = el('yt-link-' + deck);
       var badge   = el('badge-' + deck);
       var playBtn = el('play-' + deck);
+      var vis     = el('audio-vis-' + deck);
 
       badge.setAttribute('data-state', newState);
       badge.textContent = newState;
 
-      // overlay visibility
       if (newState === 'ready' || newState === 'playing') {
         overlay.classList.add('hidden');
         overlay.classList.remove('loading');
@@ -513,7 +644,6 @@
         playBtn.disabled = true;
       }
 
-      // overlay content
       if (newState === 'loading') {
         icon.textContent = '';
         msgEl.textContent = 'Loading…';
@@ -525,35 +655,61 @@
       } else if (newState === 'error') {
         icon.textContent = '⚠️';
         msgEl.textContent = errorMsg || 'This video cannot be played here.\nTry another URL or open in YouTube.';
-        ytLink.href = 'https://www.youtube.com/watch?v=' + vidIds[deck];
-        ytLink.style.display = 'inline-block';
+        if (deckType[deck] === 'youtube' && vidIds[deck]) {
+          ytLink.href = 'https://www.youtube.com/watch?v=' + vidIds[deck];
+          ytLink.style.display = 'inline-block';
+        } else {
+          ytLink.style.display = 'none';
+        }
       }
 
       if (newState !== 'playing') {
         playBtn.textContent = 'Play';
+        if (vis) vis.classList.remove('playing');
+      } else {
+        playBtn.textContent = 'Pause';
+        if (vis) vis.classList.add('playing');
       }
     }
 
-    // ── Timeout ───────────────────────────────────────────────────────────
-    function armTimeout(deck) {
-      clearTimeout(timeouts[deck]);
-      timeouts[deck] = setTimeout(function () {
+    // ── Timers ────────────────────────────────────────────────────────────
+    function armLoadTimer(deck) {
+      clearTimeout(loadTimers[deck]);
+      loadTimers[deck] = setTimeout(function () {
         if (states[deck] === 'loading') {
-          console.warn('[DJ Mixer] Deck ' + deck.toUpperCase() + ': load timed out after ' + (LOAD_TIMEOUT_MS / 1000) + 's');
+          console.warn('[DJ Mixer] Deck ' + deck.toUpperCase() + ': load timed out');
+          failedUrls.push({ deck: deck, src: vidIds[deck], reason: 'timeout' });
           setState(deck, 'error', 'Load timed out.\nCheck your connection or try another URL.');
         }
-      }, LOAD_TIMEOUT_MS);
+      }, LOAD_TIMEOUT);
     }
 
-    function clearLoadTimeout(deck) {
-      clearTimeout(timeouts[deck]);
-      timeouts[deck] = null;
+    function clearLoadTimer(deck) { clearTimeout(loadTimers[deck]); loadTimers[deck] = null; }
+
+    // Detects YouTube sign-in / bot verification: playVideo() called but
+    // player never reaches BUFFERING/PLAYING within PLAY_CHECK ms.
+    function armPlayCheck(deck) {
+      clearTimeout(playTimers[deck]);
+      playTimers[deck] = setTimeout(function () {
+        if (states[deck] !== 'playing') {
+          try {
+            var s = ytPlayers[deck] && ytPlayers[deck].getPlayerState();
+            if (s === -1 || s === 2 || s === 5) {
+              console.warn('[DJ Mixer] Deck ' + deck.toUpperCase() + ': play did not progress — possible sign-in/bot check');
+              failedUrls.push({ deck: deck, src: vidIds[deck], reason: 'play-no-progress' });
+              setState(deck, 'error', 'This video may require sign-in or bot verification.\nTry another URL or open it in YouTube.');
+            }
+          } catch(e) {}
+        }
+      }, PLAY_CHECK);
     }
 
-    // ── Player events ─────────────────────────────────────────────────────
+    function clearPlayCheck(deck) { clearTimeout(playTimers[deck]); playTimers[deck] = null; }
+
+    // ── YouTube player events ─────────────────────────────────────────────
     function makeReadyHandler(deck) {
       return function () {
-        clearLoadTimeout(deck);
+        clearLoadTimer(deck);
         setState(deck, 'ready');
         applyMix();
       };
@@ -561,24 +717,26 @@
 
     function makeStateChangeHandler(deck) {
       return function (e) {
-        var YTS = YT.PlayerState;
+        var S = YT.PlayerState;
         var playBtn = el('play-' + deck);
         switch (e.data) {
-          case YTS.PLAYING:
-            clearLoadTimeout(deck);
+          case S.PLAYING:
+            clearLoadTimer(deck);
+            clearPlayCheck(deck);
             setState(deck, 'playing');
             playBtn.textContent = 'Pause';
             break;
-          case YTS.PAUSED:
-          case YTS.CUED:
-            clearLoadTimeout(deck);
+          case S.BUFFERING:
+            clearPlayCheck(deck); // video IS loading — not a bot check
+            break;
+          case S.PAUSED:
+          case S.CUED:
+            clearPlayCheck(deck);
+            clearLoadTimer(deck);
             setState(deck, 'ready');
             break;
-          case YTS.ENDED:
+          case S.ENDED:
             setState(deck, 'ready');
-            break;
-          case YTS.BUFFERING:
-            // stay in loading; timeout guards against hang
             break;
         }
       };
@@ -586,21 +744,23 @@
 
     function makeErrorHandler(deck) {
       return function (e) {
-        clearLoadTimeout(deck);
-        var msg = ERROR_MSGS[e.data] || ('Player error (code ' + e.data + ').\nTry another video.');
-        console.error('[DJ Mixer] Deck ' + deck.toUpperCase() + ' — error ' + e.data + ': ' + msg.replace('\n', ' '));
+        clearLoadTimer(deck);
+        clearPlayCheck(deck);
+        var msg = YT_ERRORS[e.data] || ('Player error (code ' + e.data + ').\nTry another video.');
+        console.error('[DJ Mixer] Deck ' + deck.toUpperCase() + ' YT error ' + e.data + ': ' + msg.replace('\n', ' '));
+        failedUrls.push({ deck: deck, src: vidIds[deck], ytCode: e.data });
+        console.debug('[DJ Mixer] Failed URL log:', failedUrls);
         setState(deck, 'error', msg);
       };
     }
 
-    // ── Player lifecycle ──────────────────────────────────────────────────
-    function createPlayer(deck, videoId) {
+    // ── YouTube player lifecycle ──────────────────────────────────────────
+    function createYTPlayer(deck, videoId) {
       vidIds[deck] = videoId;
       setState(deck, 'loading');
-      armTimeout(deck);
-
+      armLoadTimer(deck);
       try {
-        players[deck] = new YT.Player('player-' + deck, {
+        ytPlayers[deck] = new YT.Player('player-' + deck, {
           videoId: videoId,
           playerVars: { rel: 0, playsinline: 1 },
           events: {
@@ -610,65 +770,155 @@
           }
         });
       } catch (err) {
-        clearLoadTimeout(deck);
-        console.error('[DJ Mixer] Failed to create player for deck ' + deck + ':', err);
-        setState(deck, 'error', 'Could not initialise player.\nRefresh the page and try again.');
+        clearLoadTimer(deck);
+        console.error('[DJ Mixer] createYTPlayer failed for deck ' + deck, err);
+        setState(deck, 'error', 'Could not initialise player.\nRefresh and try again.');
       }
     }
 
-    function loadVideo(deck, videoId) {
+    function loadYouTube(deck, videoId) {
+      // Switch mode if coming from audio
+      if (deckType[deck] === 'audio') {
+        if (audioEls[deck]) { try { audioEls[deck].pause(); audioEls[deck].src = ''; } catch(e) {} }
+        el('audio-vis-' + deck).style.display = 'none';
+        deckType[deck] = 'youtube';
+      }
+
       vidIds[deck] = videoId;
-      var player = players[deck];
+      var player = ytPlayers[deck];
 
       if (!player || typeof player.loadVideoById !== 'function') {
-        if (player) { try { player.destroy(); } catch (e) {} }
-        createPlayer(deck, videoId);
+        if (player) { try { player.destroy(); } catch(e) {} }
+        createYTPlayer(deck, videoId);
         return;
       }
 
       setState(deck, 'loading');
-      armTimeout(deck);
+      armLoadTimer(deck);
       try {
         player.loadVideoById(videoId);
       } catch (err) {
-        clearLoadTimeout(deck);
-        console.error('[DJ Mixer] loadVideoById failed for deck ' + deck + ':', err);
-        setState(deck, 'error', 'Failed to load video.\nTry again.');
+        clearLoadTimer(deck);
+        console.error('[DJ Mixer] loadVideoById failed deck ' + deck, err);
+        setState(deck, 'error', 'Failed to load video. Try again.');
       }
+    }
+
+    // ── Audio player ──────────────────────────────────────────────────────
+    function wireAudioEvents(deck, audio) {
+      audio.addEventListener('canplay', function () {
+        clearLoadTimer(deck);
+        setState(deck, 'ready');
+        applyMix();
+      });
+      audio.addEventListener('playing', function () {
+        setState(deck, 'playing');
+        el('play-' + deck).textContent = 'Pause';
+      });
+      audio.addEventListener('pause', function () {
+        if (states[deck] !== 'error') setState(deck, 'ready');
+      });
+      audio.addEventListener('ended', function () { setState(deck, 'ready'); });
+      audio.addEventListener('error', function () {
+        clearLoadTimer(deck);
+        var code = audio.error ? audio.error.code : '?';
+        console.error('[DJ Mixer] Deck ' + deck.toUpperCase() + ' audio error (MediaError ' + code + ')');
+        failedUrls.push({ deck: deck, src: audio.src, mediaErrorCode: code });
+        console.debug('[DJ Mixer] Failed URL log:', failedUrls);
+        setState(deck, 'error', 'Audio failed to load.\nCheck the URL or try another file.');
+      });
+    }
+
+    function loadAudio(deck, src, name) {
+      // Switch mode if coming from YouTube
+      if (deckType[deck] === 'youtube') {
+        if (ytPlayers[deck]) { try { ytPlayers[deck].destroy(); } catch(e) {} ytPlayers[deck] = null; }
+        deckType[deck] = 'audio';
+      }
+
+      el('audio-vis-' + deck).style.display = 'flex';
+      el('track-name-' + deck).textContent = name || src.split('/').pop().split('?')[0];
+
+      setState(deck, 'loading');
+      armLoadTimer(deck);
+
+      var audio = audioEls[deck];
+      if (!audio) {
+        audio = new Audio();
+        audioEls[deck] = audio;
+        wireAudioEvents(deck, audio);
+      }
+      audio.src = src;
+      audio.load();
     }
 
     // ── Controls ──────────────────────────────────────────────────────────
     function wireControls() {
       ['a', 'b'].forEach(function (deck) {
 
-        // Load button
+        // Load from URL input
         el('load-' + deck).addEventListener('click', function () {
           var input = el('url-' + deck);
-          var id = extractVideoId(input.value);
-          if (!id) {
-            input.classList.remove('invalid');
-            void input.offsetWidth; // reflow to restart animation
-            input.classList.add('invalid');
-            setTimeout(function () { input.classList.remove('invalid'); }, 600);
-            return;
+          var classified = classifyInput(input.value);
+          if (!classified) { flashInvalid(input); return; }
+          if (classified.type === 'audio') {
+            loadAudio(deck, classified.src, classified.name);
+          } else {
+            loadYouTube(deck, classified.id);
           }
-          loadVideo(deck, id);
           input.value = '';
         });
 
-        // Enter key in input
         el('url-' + deck).addEventListener('keydown', function (e) {
           if (e.key === 'Enter') el('load-' + deck).click();
         });
 
+        // File upload
+        el('btn-file-' + deck).addEventListener('click', function () {
+          el('file-input-' + deck).click();
+        });
+
+        el('file-input-' + deck).addEventListener('change', function () {
+          var file = this.files[0];
+          if (!file) return;
+          var src = URL.createObjectURL(file);
+          loadAudio(deck, src, file.name);
+          this.value = ''; // reset so same file can be reloaded
+        });
+
+        // Demo track
+        el('btn-demo-' + deck).addEventListener('click', function () {
+          var demo = DEMOS[deck];
+          loadAudio(deck, demo.src, demo.name);
+        });
+
         // Play / Pause
         el('play-' + deck).addEventListener('click', function () {
-          var player = players[deck];
-          if (!player) return;
-          try {
-            player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo();
-          } catch (err) {
-            console.error('[DJ Mixer] play/pause error on deck ' + deck + ':', err);
+          if (deckType[deck] === 'audio') {
+            var audio = audioEls[deck];
+            if (!audio) return;
+            if (audio.paused) {
+              audio.play().catch(function (err) {
+                console.error('[DJ Mixer] audio.play() failed deck ' + deck, err);
+                setState(deck, 'error', 'Playback blocked by browser.\nTry clicking again.');
+              });
+            } else {
+              audio.pause();
+            }
+          } else {
+            var player = ytPlayers[deck];
+            if (!player) return;
+            try {
+              if (player.getPlayerState() === 1) {
+                player.pauseVideo();
+                clearPlayCheck(deck);
+              } else {
+                player.playVideo();
+                armPlayCheck(deck); // detect bot/sign-in freeze
+              }
+            } catch (err) {
+              console.error('[DJ Mixer] play/pause error deck ' + deck, err);
+            }
           }
         });
       });
@@ -681,9 +931,14 @@
     // ── Bootstrap ─────────────────────────────────────────────────────────
     window.onYouTubeIframeAPIReady = function () {
       wireControls();
-      createPlayer('a', DEFAULTS.a);
-      createPlayer('b', DEFAULTS.b);
+      createYTPlayer('a', YT_DEFAULTS.a);
+      createYTPlayer('b', YT_DEFAULTS.b);
     };
+
+    // Fallback: if YT API already loaded (e.g. cached page), init immediately
+    if (typeof YT !== 'undefined' && YT.Player) {
+      window.onYouTubeIframeAPIReady();
+    }
 
   }());
   </script>
