@@ -1,0 +1,2775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DJ Mixer - Browser DJ Console</title>
+  <meta name="description" content="A two-deck browser DJ mixer with waveforms, BPM detection, tap tempo, and pitch control for YouTube links, audio URLs, local files, and demo tracks.">
+  <!-- DJ Mixer — beatmatching + sync + mobile landscape build · auto-deploy -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cyan: #2ee7ff;
+      --magenta: #ff3bd5;
+      --green: #39d98a;
+      --amber: #ffbd4a;
+      --red: #ff5470;
+      --bg: #05070c;
+      --panel: #10131d;
+      --panel-2: #151927;
+      --panel-3: #090b12;
+      --line: rgba(255, 255, 255, 0.11);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --text: #f5f7fb;
+      --muted: #8992a8;
+      --muted-2: #5f687d;
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+      --radius: 8px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    html { min-height: 100%; }
+
+    body {
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        linear-gradient(160deg, #0b1020 0%, #05070c 48%, #090813 100%);
+      background-size: 44px 44px, 44px 44px, auto;
+      padding: 28px 16px 36px;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(46, 231, 255, 0.08), transparent 28%, transparent 72%, rgba(255, 59, 213, 0.08)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 26%);
+      mix-blend-mode: screen;
+    }
+
+    .app-shell {
+      position: relative;
+      width: min(1180px, 100%);
+      margin: 0 auto;
+    }
+
+    .masthead {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .masthead-kicker,
+    .masthead-status {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .masthead-status {
+      justify-self: end;
+      color: var(--amber);
+    }
+
+    h1.title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: var(--text);
+      font-size: clamp(2rem, 5vw, 4.3rem);
+      font-weight: 850;
+      letter-spacing: 0;
+      line-height: 0.95;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .title-mark {
+      display: inline-grid;
+      width: clamp(40px, 7vw, 64px);
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(46, 231, 255, 0.2), rgba(255, 59, 213, 0.14)),
+        var(--panel);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 0 30px rgba(46, 231, 255, 0.18);
+      font-family: var(--mono);
+      font-size: clamp(0.82rem, 2vw, 1.1rem);
+      letter-spacing: 0.08em;
+    }
+
+    .system-warning {
+      display: none;
+      width: min(780px, 100%);
+      margin: 0 auto 22px;
+      padding: 14px 18px;
+      color: #ffd199;
+      background: rgba(255, 137, 44, 0.1);
+      border: 1px solid rgba(255, 189, 74, 0.35);
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+      line-height: 1.55;
+      text-align: center;
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+    }
+
+    .system-warning strong { color: #ffbd4a; }
+    .system-warning code {
+      display: inline-block;
+      margin: 4px 0;
+      padding: 3px 8px;
+      color: #ffe0aa;
+      background: rgba(0, 0, 0, 0.32);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+
+    .console {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 148px minmax(0, 1fr);
+      align-items: stretch;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .deck {
+      position: relative;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 20px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 38%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent),
+        var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .deck::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 3px;
+      opacity: 0.95;
+    }
+
+    #deck-a::before { background: linear-gradient(90deg, var(--cyan), transparent 72%); }
+    #deck-b::before { background: linear-gradient(90deg, var(--magenta), transparent 72%); }
+    #deck-a { box-shadow: var(--shadow), 0 0 42px rgba(46, 231, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+    #deck-b { box-shadow: var(--shadow), 0 0 42px rgba(255, 59, 213, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+
+    .deck-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .deck-label {
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    #deck-a .deck-label { color: var(--cyan); }
+    #deck-b .deck-label { color: var(--magenta); }
+
+    .state-badge {
+      display: inline-flex;
+      min-width: 72px;
+      min-height: 24px;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: background 0.25s, color 0.25s, border-color 0.25s;
+    }
+
+    .state-badge[data-state="loading"] { color: var(--amber); background: rgba(255, 189, 74, 0.1); border-color: rgba(255, 189, 74, 0.22); }
+    .state-badge[data-state="ready"] { color: var(--green); background: rgba(57, 217, 138, 0.1); border-color: rgba(57, 217, 138, 0.22); }
+    .state-badge[data-state="playing"] { color: #8fffc0; background: rgba(57, 217, 138, 0.16); border-color: rgba(57, 217, 138, 0.3); }
+    .state-badge[data-state="error"] { color: var(--red); background: rgba(255, 84, 112, 0.12); border-color: rgba(255, 84, 112, 0.26); }
+
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #030407;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45), inset 0 -50px 90px rgba(0, 0, 0, 0.34);
+    }
+
+    .video-wrap iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* ── Audio visual (waveform) — shown in audio mode ── */
+    .audio-visual {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 22px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 40%),
+        linear-gradient(135deg, rgba(46, 231, 255, 0.14), rgba(255, 59, 213, 0.08)),
+        #070a12;
+      border-radius: var(--radius);
+    }
+
+    .audio-visual::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius);
+      pointer-events: none;
+    }
+
+    .waveform-host {
+      position: relative;
+      z-index: 1;
+      width: min(88%, 460px);
+    }
+
+    .waveform-host ::part(cursor) { z-index: 2; }
+
+    .track-name {
+      position: relative;
+      z-index: 1;
+      width: min(84%, 360px);
+      padding: 7px 12px;
+      overflow: hidden;
+      color: #dbe1f5;
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 650;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .deck-overlay {
+      position: absolute;
+      z-index: 10;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 18px;
+      color: var(--text);
+      background: rgba(5, 7, 12, 0.82);
+      border-radius: var(--radius);
+      text-align: center;
+      backdrop-filter: blur(7px);
+    }
+
+    .deck-overlay.hidden { display: none; }
+
+    .overlay-spinner {
+      display: none;
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255, 255, 255, 0.14);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    #deck-b .overlay-spinner { border-top-color: var(--magenta); }
+    .deck-overlay.loading .overlay-spinner { display: block; }
+    .deck-overlay.loading .overlay-icon { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .overlay-icon { font-size: 2rem; line-height: 1; }
+
+    .overlay-msg {
+      max-width: 280px;
+      color: #c8d0e8;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      white-space: pre-line;
+    }
+
+    .overlay-yt-link {
+      display: none;
+      margin-top: 3px;
+      color: #ff9baa;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255, 155, 170, 0.55);
+    }
+
+    .overlay-yt-link:hover { color: #ffd0d7; }
+
+    /* ── BPM row ── */
+    .bpm-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .bpm-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 82px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .bpm-label {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .bpm-value {
+      font-family: var(--mono);
+      font-size: 1.22rem;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+
+    #deck-a .bpm-value { color: var(--cyan); }
+    #deck-b .bpm-value { color: var(--magenta); }
+
+    .btn-tap {
+      cursor: pointer;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      font-weight: 750;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      user-select: none;
+      transition: transform 0.1s, background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .btn-tap:active { transform: scale(0.97); background: rgba(255, 255, 255, 0.1); }
+    #deck-a .btn-tap:hover { border-color: rgba(46, 231, 255, 0.7); color: var(--cyan); }
+    #deck-b .btn-tap:hover { border-color: rgba(255, 59, 213, 0.7); color: var(--magenta); }
+
+    .btn-reset-bpm,
+    .btn-reset-tempo {
+      cursor: pointer;
+      padding: 0 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .btn-reset-bpm:hover,
+    .btn-reset-tempo:hover { color: var(--text); border-color: var(--line-strong); }
+
+    .url-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    .url-row input {
+      min-width: 0;
+      min-height: 44px;
+      padding: 0 13px;
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: var(--radius);
+      font: 500 0.92rem var(--sans);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .url-row input::placeholder { color: #6e768a; }
+    #deck-a .url-row input:focus { border-color: rgba(46, 231, 255, 0.72); box-shadow: 0 0 0 3px rgba(46, 231, 255, 0.12); }
+    #deck-b .url-row input:focus { border-color: rgba(255, 59, 213, 0.72); box-shadow: 0 0 0 3px rgba(255, 59, 213, 0.12); }
+
+    .url-row input.invalid {
+      border-color: var(--red) !important;
+      box-shadow: 0 0 0 3px rgba(255, 84, 112, 0.14) !important;
+      animation: shake 0.3s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    button {
+      min-height: 44px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 750;
+      white-space: normal;
+    }
+
+    .btn-load,
+    .btn-extra,
+    .btn-play {
+      cursor: pointer;
+      border-radius: var(--radius);
+      transition: transform 0.12s, background 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+    }
+
+    .btn-load {
+      padding: 0 16px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 0.9rem;
+    }
+
+    #deck-a .btn-load:hover { border-color: rgba(46, 231, 255, 0.75); box-shadow: 0 0 18px rgba(46, 231, 255, 0.18); }
+    #deck-b .btn-load:hover { border-color: rgba(255, 59, 213, 0.75); box-shadow: 0 0 18px rgba(255, 59, 213, 0.18); }
+
+    .source-hint {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .source-hint span {
+      padding: 3px 7px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
+    }
+
+    .extra-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-extra {
+      padding: 0 12px;
+      color: #cbd4ed;
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 0.86rem;
+    }
+
+    .btn-extra:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.22); }
+
+    /* ── Tempo / pitch row ── */
+    .tempo-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tempo-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tempo-title {
+      flex: 1;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .tempo-pct {
+      min-width: 54px;
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      font-weight: 800;
+    }
+
+    #deck-a .tempo-pct { color: var(--cyan); }
+    #deck-b .tempo-pct { color: var(--magenta); }
+
+    .tempo-marks {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+    }
+
+    .tempo-note {
+      display: none;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+
+    .tempo-row.yt-mode .tempo-slider,
+    .tempo-row.yt-mode .btn-reset-tempo,
+    .tempo-row.yt-mode .tempo-pct { opacity: 0.3; pointer-events: none; }
+    .tempo-row.yt-mode .tempo-note { display: block; }
+
+    .btn-play {
+      width: 100%;
+      min-height: 54px;
+      padding: 0 16px;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), transparent),
+        rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    #deck-a .btn-play:not(:disabled) { border-color: rgba(46, 231, 255, 0.58); box-shadow: inset 0 0 0 1px rgba(46, 231, 255, 0.06); }
+    #deck-b .btn-play:not(:disabled) { border-color: rgba(255, 59, 213, 0.58); box-shadow: inset 0 0 0 1px rgba(255, 59, 213, 0.06); }
+    #deck-a .btn-play:not(:disabled):hover { background-color: rgba(46, 231, 255, 0.1); box-shadow: 0 0 24px rgba(46, 231, 255, 0.18); }
+    #deck-b .btn-play:not(:disabled):hover { background-color: rgba(255, 59, 213, 0.1); box-shadow: 0 0 24px rgba(255, 59, 213, 0.18); }
+
+    .btn-load:active,
+    .btn-extra:active,
+    .btn-play:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
+
+    .btn-play:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .vol-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+    }
+
+    .vol-label {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      width: 100%;
+      min-width: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      border-radius: 999px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 20px;
+      height: 20px;
+      -webkit-appearance: none;
+      appearance: none;
+      border: 3px solid #10131d;
+      border-radius: 50%;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border: 3px solid #10131d;
+      border-radius: 50%;
+    }
+
+    #deck-a input[type="range"]::-webkit-slider-thumb { background: var(--cyan); box-shadow: 0 0 16px rgba(46, 231, 255, 0.65); }
+    #deck-a input[type="range"]::-moz-range-thumb { background: var(--cyan); box-shadow: 0 0 16px rgba(46, 231, 255, 0.65); }
+    #deck-b input[type="range"]::-webkit-slider-thumb { background: var(--magenta); box-shadow: 0 0 16px rgba(255, 59, 213, 0.65); }
+    #deck-b input[type="range"]::-moz-range-thumb { background: var(--magenta); box-shadow: 0 0 16px rgba(255, 59, 213, 0.65); }
+
+    .crossfader-section {
+      position: relative;
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      gap: 14px;
+      padding: 20px 16px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent),
+        rgba(255, 255, 255, 0.035);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .cf-label {
+      order: -2;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .cf-ab {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .cf-ab span:first-child { color: var(--cyan); }
+    .cf-ab span:last-child { color: var(--magenta); }
+
+    #crossfader {
+      flex: 0 0 auto;
+      width: 100%;
+      height: 12px;
+      background: linear-gradient(90deg, rgba(46, 231, 255, 0.58), rgba(255, 189, 74, 0.2) 50%, rgba(255, 59, 213, 0.58));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.34);
+      cursor: grab;
+    }
+
+    #crossfader::-webkit-slider-thumb {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #131722;
+      border-radius: 7px;
+      background: #f6f7ff;
+      box-shadow: 0 0 22px rgba(255, 255, 255, 0.45);
+      cursor: grab;
+    }
+
+    #crossfader::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border: 3px solid #131722;
+      border-radius: 7px;
+      background: #f6f7ff;
+      box-shadow: 0 0 22px rgba(255, 255, 255, 0.45);
+      cursor: grab;
+    }
+
+    #crossfader::-webkit-slider-thumb:active { cursor: grabbing; }
+
+    .project-link {
+      display: flex;
+      justify-content: center;
+      margin-top: 18px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+
+    .project-link:hover { color: var(--text); }
+
+    @media (max-width: 980px) {
+      .masthead {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 8px;
+        text-align: center;
+      }
+
+      .masthead-status { justify-self: center; }
+
+      .console {
+        grid-template-columns: 1fr;
+        max-width: 680px;
+        margin: 0 auto;
+      }
+
+      .crossfader-section {
+        min-height: 116px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body { padding: 18px 10px 28px; }
+      .masthead { margin-bottom: 16px; }
+      h1.title { flex-direction: column; gap: 8px; }
+      .masthead-kicker,
+      .masthead-status { font-size: 0.62rem; }
+      .deck { padding: 14px; gap: 12px; }
+      .url-row { grid-template-columns: 1fr; }
+      .btn-load { width: 100%; }
+      .extra-row { gap: 8px; }
+      .btn-extra { padding: 0 8px; font-size: 0.8rem; }
+      .track-name { width: 90%; font-size: 0.75rem; }
+      .system-warning { font-size: 0.78rem; }
+    }
+
+    /* ── Beat grid overlay (drawn over the waveform) ── */
+    .beatgrid {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .beat-line {
+      position: absolute;
+      top: 6%;
+      bottom: 6%;
+      width: 1px;
+      margin-left: -0.5px;
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .beat-line.down { width: 2px; margin-left: -1px; background: rgba(255, 255, 255, 0.42); }
+    #deck-a .beat-line.active { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); width: 2px; }
+    #deck-b .beat-line.active { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); width: 2px; }
+
+    /* ── BPM sub-line (detected + effective) ── */
+    .bpm-sub {
+      margin-top: 1px;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.52rem;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    /* ── Sync / nudge row ── */
+    .sync-row {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-sync, .btn-nudge {
+      cursor: pointer;
+      min-height: 42px;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 750;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: transform 0.1s, background 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.2s, opacity 0.2s;
+    }
+    .btn-sync {
+      color: var(--text);
+      background: rgba(57, 217, 138, 0.1);
+      border: 1px solid rgba(57, 217, 138, 0.4);
+    }
+    .btn-sync:hover:not(:disabled) { background: rgba(57, 217, 138, 0.18); box-shadow: 0 0 16px rgba(57, 217, 138, 0.25); }
+    .btn-sync.master   { background: rgba(255, 189, 74, 0.16); border-color: var(--amber); color: var(--amber); }
+    .btn-sync.follower { background: rgba(57, 217, 138, 0.22); border-color: var(--green); color: var(--green); }
+    .btn-sync.fail     { border-color: var(--red); color: var(--red); animation: shake 0.3s ease; }
+    .btn-nudge {
+      color: #cbd4ed;
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .btn-nudge:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+    .btn-nudge.hit { background: rgba(255, 255, 255, 0.22); }
+    .btn-sync:active:not(:disabled), .btn-nudge:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
+    .btn-sync:disabled, .btn-nudge:disabled { opacity: 0.3; cursor: not-allowed; }
+    .deck.yt .sync-row { display: none; }
+
+    /* ── Phase / drift meter (beside the crossfader) ── */
+    .phase-meter {
+      order: -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+    .phase-cap {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.54rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .phase-track {
+      position: relative;
+      width: 100%;
+      height: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .phase-track::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .phase-needle {
+      position: absolute;
+      top: -2px; bottom: -2px;
+      left: 50%;
+      width: 4px;
+      margin-left: -2px;
+      border-radius: 2px;
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(57, 217, 138, 0.7);
+      transition: left 0.06s linear, background 0.2s;
+    }
+    .phase-needle.hot { background: var(--red); box-shadow: 0 0 8px rgba(255, 84, 112, 0.8); }
+    .phase-readout {
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.03em;
+      text-align: center;
+    }
+    .phase-roles {
+      min-height: 0.7em;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+
+    /* ── Debug toggle + panel ── */
+    .debug-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .debug-toggle input { accent-color: var(--cyan); cursor: pointer; }
+    .debug-panel {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      width: 100%;
+      margin: 18px auto 0;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .debug-panel.open { display: grid; }
+    .debug-deck h4 {
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    #dbg-a-wrap h4 { color: var(--cyan); }
+    #dbg-b-wrap h4 { color: var(--magenta); }
+    .debug-deck pre {
+      margin: 0;
+      color: #aeb6cc;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    /* ── Keyboard help ── */
+    .kbd-help {
+      margin-top: 14px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.03em;
+      text-align: center;
+      line-height: 1.7;
+    }
+    .kbd-help kbd {
+      padding: 1px 6px;
+      margin: 0 1px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+    }
+
+    /* ── Cue marker + loop region (on the waveform) ── */
+    .loop-region {
+      position: absolute;
+      top: 0; bottom: 0;
+      z-index: 4;
+      display: none;
+      background: rgba(57, 217, 138, 0.16);
+      border-left: 1px solid rgba(57, 217, 138, 0.65);
+      border-right: 1px solid rgba(57, 217, 138, 0.65);
+      pointer-events: none;
+    }
+    .cue-marker {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      margin-left: -1px;
+      z-index: 6;
+      display: none;
+      background: var(--amber);
+      box-shadow: 0 0 8px var(--amber);
+      pointer-events: none;
+    }
+
+    /* ── Cue / loop rows ── */
+    .cue-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .loop-row { display: flex; align-items: center; gap: 6px; }
+    .loop-label {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .btn-cue, .btn-loop, .btn-loop-off {
+      cursor: pointer;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-weight: 750;
+      transition: transform 0.1s, background 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
+    }
+    .btn-cue {
+      min-height: 40px;
+      color: var(--text);
+      background: rgba(255, 189, 74, 0.1);
+      border: 1px solid rgba(255, 189, 74, 0.42);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .btn-cue:hover:not(:disabled) { background: rgba(255, 189, 74, 0.18); box-shadow: 0 0 14px rgba(255, 189, 74, 0.2); }
+    .btn-loop {
+      flex: 1;
+      min-height: 36px;
+      color: #cbd4ed;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      font-size: 0.82rem;
+    }
+    .btn-loop:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+    .btn-loop.active { background: rgba(57, 217, 138, 0.2); border-color: var(--green); color: var(--green); }
+    .btn-loop-off {
+      min-height: 36px;
+      padding: 0 11px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 0.78rem;
+    }
+    .btn-loop-off:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
+    .btn-cue:active:not(:disabled), .btn-loop:active:not(:disabled), .btn-loop-off:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
+    .btn-cue:disabled, .btn-loop:disabled, .btn-loop-off:disabled { opacity: 0.3; cursor: not-allowed; }
+    .deck.yt .cue-row, .deck.yt .loop-row { display: none; }
+
+    /* ── Crossfader curve + quantize ── */
+    .cf-curve { display: flex; gap: 4px; width: 100%; }
+    .cf-curve button {
+      flex: 1;
+      min-height: 30px;
+      cursor: pointer;
+      border-radius: 6px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .cf-curve button.active { background: rgba(46, 231, 255, 0.15); border-color: var(--cyan); color: var(--cyan); }
+    .btn-quant-global {
+      width: 100%;
+      min-height: 32px;
+      cursor: pointer;
+      border-radius: 6px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 0.56rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .btn-quant-global.active { background: rgba(57, 217, 138, 0.16); border-color: var(--green); color: var(--green); }
+
+    /* ── Keyboard shortcuts panel ── */
+    .btn-keys {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 10px;
+      cursor: pointer;
+      padding: 2px 8px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .btn-keys:hover { color: var(--text); border-color: var(--line-strong); }
+    .shortcuts-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(5, 7, 12, 0.8);
+      backdrop-filter: blur(4px);
+    }
+    .shortcuts-panel.open { display: flex; }
+    .shortcuts-card {
+      width: 100%;
+      max-width: 540px;
+      max-height: 90vh;
+      overflow: auto;
+      padding: 22px;
+      background: var(--panel);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .shortcuts-card h3 {
+      margin-bottom: 14px;
+      color: var(--text);
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .shortcuts-card table { width: 100%; border-collapse: collapse; }
+    .shortcuts-card td { padding: 6px 6px; border-bottom: 1px solid var(--line); font-size: 0.82rem; color: #cbd4ed; }
+    .shortcuts-card td:first-child { white-space: nowrap; width: 1%; }
+    .shortcuts-card kbd {
+      padding: 2px 7px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+    .shortcuts-close {
+      margin-top: 16px;
+      width: 100%;
+      min-height: 42px;
+      cursor: pointer;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Touch usability (all touch devices) ── */
+    input[type="range"] { touch-action: none; }
+    button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .btn-load, .btn-extra, .btn-play, .btn-sync, .btn-nudge, .btn-tap,
+    .btn-reset-bpm, .btn-reset-tempo, .state-badge, .deck-label, .cf-label,
+    .source-hint, .phase-cap, .phase-readout, .track-name {
+      -webkit-user-select: none; user-select: none;
+    }
+
+    /* ── Safe-area insets (notch / dynamic island) ── */
+    body {
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      padding-bottom: max(36px, env(safe-area-inset-bottom));
+    }
+
+    /* ── Rotate-to-landscape overlay (small phones in portrait) ── */
+    .rotate-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(160deg, #0b1020, #05070c);
+      text-align: center;
+    }
+    .rotate-card { max-width: 320px; }
+    .rotate-icon { font-size: 3rem; margin-bottom: 14px; animation: rothint 1.8s ease-in-out infinite; }
+    @keyframes rothint { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(84deg); } }
+    .rotate-title {
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .rotate-sub { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+    @media (max-width: 600px) and (orientation: portrait) {
+      .rotate-overlay { display: flex; }
+    }
+
+    /* ── Mobile landscape: keep both decks + crossfader on screen ── */
+    @media (orientation: landscape) and (max-height: 480px) {
+      body {
+        padding-top: max(8px, env(safe-area-inset-top));
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+      }
+      .masthead { margin-bottom: 8px; grid-template-columns: 1fr; gap: 0; }
+      .masthead-kicker, .masthead-status { display: none; }
+      h1.title { flex-direction: row; font-size: 1.1rem; gap: 8px; }
+      .title-mark { width: 26px; font-size: 0.6rem; }
+      .system-warning { padding: 8px 12px; font-size: 0.72rem; margin-bottom: 8px; }
+
+      .console {
+        grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr);
+        gap: 8px;
+        max-width: none;
+        margin: 0;
+        align-items: start;
+      }
+      .deck { padding: 9px; gap: 7px; border-radius: 7px; }
+      .deck::before { height: 2px; }
+      .video-wrap { aspect-ratio: auto; height: 84px; }
+
+      .deck-header { gap: 6px; }
+      .deck-label { font-size: 0.66rem; letter-spacing: 0.1em; }
+      .state-badge { min-width: 0; min-height: 20px; padding: 2px 7px; font-size: 0.52rem; }
+
+      /* Hide secondary / explanatory UI on small landscape */
+      .source-hint, .tempo-marks, .tempo-note, .kbd-help { display: none; }
+
+      .bpm-row { gap: 6px; }
+      .bpm-block { min-width: 58px; padding: 3px 8px; }
+      .bpm-value { font-size: 0.95rem; }
+      .bpm-sub { font-size: 0.46rem; }
+
+      .url-row, .extra-row, .sync-row { gap: 6px; }
+      .url-row input { min-height: 40px; font-size: 0.8rem; }
+      .btn-load, .btn-extra, .btn-tap, .btn-reset-bpm, .btn-reset-tempo { min-height: 40px; font-size: 0.74rem; }
+      .btn-sync, .btn-nudge { min-height: 42px; font-size: 0.62rem; }
+      .btn-play { min-height: 46px; font-size: 0.82rem; }
+
+      .tempo-row { gap: 4px; }
+      .tempo-header { gap: 6px; }
+      .vol-row { gap: 8px; }
+
+      .crossfader-section { padding: 10px 8px; gap: 8px; min-height: 0; }
+      .phase-cap { font-size: 0.48rem; }
+      .phase-readout { font-size: 0.54rem; }
+      .phase-roles, .cf-label { display: none; }
+
+      .project-link { margin-top: 8px; font-size: 0.6rem; }
+      .debug-panel { padding: 10px; }
+      .debug-deck pre { font-size: 0.58rem; }
+
+      .cue-row, .loop-row { gap: 5px; }
+      .btn-cue { min-height: 36px; font-size: 0.66rem; }
+      .btn-loop, .btn-loop-off { min-height: 32px; font-size: 0.74rem; }
+      .loop-label { font-size: 0.52rem; }
+      .cf-curve button { min-height: 26px; font-size: 0.5rem; }
+      .btn-quant-global { min-height: 28px; font-size: 0.52rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="app-shell">
+    <header class="masthead">
+      <div class="masthead-kicker">Browser DJ console</div>
+      <h1 class="title"><span class="title-mark" aria-hidden="true">MIX</span>DJ Mixer</h1>
+      <div class="masthead-status">Live in the browser<button class="btn-keys" id="keys-btn">⌨ Keys</button><label class="debug-toggle"><input type="checkbox" id="debug-chk">Debug</label></div>
+    </header>
+
+    <div id="file-warning" class="system-warning">
+      <strong>YouTube requires HTTP - open via a server, not file://</strong><br>
+      Run: <code>cd /path/to/folder &amp;&amp; python3 -m http.server 8080</code>
+      then open <strong>http://localhost:8080/index.html</strong>, or use File / Demo below.
+    </div>
+
+    <section class="console" aria-label="Two deck DJ mixer">
+
+    <!-- ── Deck A ── -->
+    <div class="deck" id="deck-a">
+      <div class="deck-header">
+        <div class="deck-label">Deck A</div>
+        <span class="state-badge" id="badge-a" data-state="idle">idle</span>
+      </div>
+      <div class="video-wrap">
+        <div id="player-a"></div>
+        <div class="audio-visual" id="audio-vis-a">
+          <div class="waveform-host" id="waveform-a"><div class="loop-region" id="loop-region-a"></div><div class="beatgrid" id="beatgrid-a"></div><div class="cue-marker" id="cue-marker-a"></div></div>
+          <div class="track-name" id="track-name-a">No track loaded</div>
+        </div>
+        <div class="deck-overlay loading" id="overlay-a">
+          <div class="overlay-spinner"></div>
+          <span class="overlay-icon">🎵</span>
+          <span class="overlay-msg">Loading default track…</span>
+          <a class="overlay-yt-link" id="yt-link-a" href="#" target="_blank" rel="noopener">Open in YouTube ↗</a>
+        </div>
+      </div>
+      <div class="bpm-row">
+        <div class="bpm-block">
+          <span class="bpm-label">BPM</span>
+          <span class="bpm-value" id="bpm-a">—</span>
+          <span class="bpm-sub" id="bpm-sub-a">det — · eff —</span>
+        </div>
+        <button class="btn-tap" id="tap-a">Tap</button>
+        <button class="btn-reset-bpm" id="reset-bpm-a">Reset</button>
+      </div>
+      <div class="url-row">
+        <input id="url-a" type="text" placeholder="YouTube URL or audio URL (.mp3 etc)" aria-label="Deck A track URL">
+        <button class="btn-load" id="load-a">Load</button>
+      </div>
+      <div class="source-hint" aria-label="Deck A sources"><span>YouTube</span><span>Audio URL</span><span>File</span><span>Demo</span></div>
+      <div class="extra-row">
+        <input type="file" id="file-input-a" accept="audio/*" style="display:none">
+        <button class="btn-extra" id="btn-file-a">Upload File</button>
+        <button class="btn-extra" id="btn-demo-a">Demo Track</button>
+      </div>
+      <div class="tempo-row" id="tempo-row-a">
+        <div class="tempo-header">
+          <span class="tempo-title">Tempo / Pitch</span>
+          <span class="tempo-pct" id="tempo-pct-a">0.0%</span>
+          <button class="btn-reset-tempo" id="reset-tempo-a">Reset</button>
+        </div>
+        <input type="range" class="tempo-slider" id="tempo-a" min="-8" max="8" step="0.1" value="0" aria-label="Deck A tempo">
+        <div class="tempo-marks"><span>−8%</span><span>0</span><span>+8%</span></div>
+        <div class="tempo-note">YouTube allows only coarse speeds — use Demo / File / Audio URL for fine pitch &amp; sync</div>
+      </div>
+      <div class="sync-row" id="sync-row-a">
+        <button class="btn-sync" id="sync-a" disabled>Sync</button>
+        <button class="btn-nudge" id="nudge-back-a" disabled title="Nudge back (Q)">⟨ Nudge</button>
+        <button class="btn-nudge" id="nudge-fwd-a" disabled title="Nudge forward (W)">Nudge ⟩</button>
+      </div>
+      <div class="cue-row" id="cue-row-a">
+        <button class="btn-cue" id="setcue-a" disabled>Set Cue</button>
+        <button class="btn-cue" id="cue-a" disabled>⏮ Cue</button>
+      </div>
+      <div class="loop-row" id="loop-row-a">
+        <span class="loop-label">Loop</span>
+        <button class="btn-loop" data-bars="1" id="loop1-a" disabled>1</button>
+        <button class="btn-loop" data-bars="2" id="loop2-a" disabled>2</button>
+        <button class="btn-loop" data-bars="4" id="loop4-a" disabled>4</button>
+        <button class="btn-loop" data-bars="8" id="loop8-a" disabled>8</button>
+        <button class="btn-loop-off" id="loopoff-a" disabled title="Loop off">✕</button>
+      </div>
+      <button class="btn-play" id="play-a" disabled>Play</button>
+      <div class="vol-row">
+        <span class="vol-label">Vol</span>
+        <input type="range" id="vol-a" min="0" max="100" value="80" aria-label="Deck A volume">
+      </div>
+    </div>
+
+    <!-- ── Crossfader ── -->
+    <div class="crossfader-section">
+      <div class="phase-meter" id="phase-meter">
+        <div class="phase-cap">Phase / Drift</div>
+        <div class="phase-track"><div class="phase-needle" id="phase-needle"></div></div>
+        <div class="phase-readout" id="phase-readout">— · —</div>
+        <div class="phase-roles" id="phase-roles"></div>
+      </div>
+      <div class="cf-ab"><span>A</span><span>B</span></div>
+      <input type="range" id="crossfader" min="0" max="100" value="50" aria-label="Crossfader">
+      <div class="cf-label">Crossfader</div>
+      <div class="cf-curve" id="cf-curve">
+        <button data-curve="smooth" class="active">Smooth</button>
+        <button data-curve="linear">Linear</button>
+        <button data-curve="cut">Cut</button>
+      </div>
+      <button class="btn-quant-global" id="quant-global">Quantize: Off</button>
+    </div>
+
+    <!-- ── Deck B ── -->
+    <div class="deck" id="deck-b">
+      <div class="deck-header">
+        <div class="deck-label">Deck B</div>
+        <span class="state-badge" id="badge-b" data-state="idle">idle</span>
+      </div>
+      <div class="video-wrap">
+        <div id="player-b"></div>
+        <div class="audio-visual" id="audio-vis-b">
+          <div class="waveform-host" id="waveform-b"><div class="loop-region" id="loop-region-b"></div><div class="beatgrid" id="beatgrid-b"></div><div class="cue-marker" id="cue-marker-b"></div></div>
+          <div class="track-name" id="track-name-b">No track loaded</div>
+        </div>
+        <div class="deck-overlay loading" id="overlay-b">
+          <div class="overlay-spinner"></div>
+          <span class="overlay-icon">🎵</span>
+          <span class="overlay-msg">Loading default track…</span>
+          <a class="overlay-yt-link" id="yt-link-b" href="#" target="_blank" rel="noopener">Open in YouTube ↗</a>
+        </div>
+      </div>
+      <div class="bpm-row">
+        <div class="bpm-block">
+          <span class="bpm-label">BPM</span>
+          <span class="bpm-value" id="bpm-b">—</span>
+          <span class="bpm-sub" id="bpm-sub-b">det — · eff —</span>
+        </div>
+        <button class="btn-tap" id="tap-b">Tap</button>
+        <button class="btn-reset-bpm" id="reset-bpm-b">Reset</button>
+      </div>
+      <div class="url-row">
+        <input id="url-b" type="text" placeholder="YouTube URL or audio URL (.mp3 etc)" aria-label="Deck B track URL">
+        <button class="btn-load" id="load-b">Load</button>
+      </div>
+      <div class="source-hint" aria-label="Deck B sources"><span>YouTube</span><span>Audio URL</span><span>File</span><span>Demo</span></div>
+      <div class="extra-row">
+        <input type="file" id="file-input-b" accept="audio/*" style="display:none">
+        <button class="btn-extra" id="btn-file-b">Upload File</button>
+        <button class="btn-extra" id="btn-demo-b">Demo Track</button>
+      </div>
+      <div class="tempo-row" id="tempo-row-b">
+        <div class="tempo-header">
+          <span class="tempo-title">Tempo / Pitch</span>
+          <span class="tempo-pct" id="tempo-pct-b">0.0%</span>
+          <button class="btn-reset-tempo" id="reset-tempo-b">Reset</button>
+        </div>
+        <input type="range" class="tempo-slider" id="tempo-b" min="-8" max="8" step="0.1" value="0" aria-label="Deck B tempo">
+        <div class="tempo-marks"><span>−8%</span><span>0</span><span>+8%</span></div>
+        <div class="tempo-note">YouTube allows only coarse speeds — use Demo / File / Audio URL for fine pitch &amp; sync</div>
+      </div>
+      <div class="sync-row" id="sync-row-b">
+        <button class="btn-sync" id="sync-b" disabled>Sync</button>
+        <button class="btn-nudge" id="nudge-back-b" disabled title="Nudge back (O)">⟨ Nudge</button>
+        <button class="btn-nudge" id="nudge-fwd-b" disabled title="Nudge forward (P)">Nudge ⟩</button>
+      </div>
+      <div class="cue-row" id="cue-row-b">
+        <button class="btn-cue" id="setcue-b" disabled>Set Cue</button>
+        <button class="btn-cue" id="cue-b" disabled>⏮ Cue</button>
+      </div>
+      <div class="loop-row" id="loop-row-b">
+        <span class="loop-label">Loop</span>
+        <button class="btn-loop" data-bars="1" id="loop1-b" disabled>1</button>
+        <button class="btn-loop" data-bars="2" id="loop2-b" disabled>2</button>
+        <button class="btn-loop" data-bars="4" id="loop4-b" disabled>4</button>
+        <button class="btn-loop" data-bars="8" id="loop8-b" disabled>8</button>
+        <button class="btn-loop-off" id="loopoff-b" disabled title="Loop off">✕</button>
+      </div>
+      <button class="btn-play" id="play-b" disabled>Play</button>
+      <div class="vol-row">
+        <span class="vol-label">Vol</span>
+        <input type="range" id="vol-b" min="0" max="100" value="80" aria-label="Deck B volume">
+      </div>
+    </div>
+
+    </section>
+
+    <div class="kbd-help">
+      <strong>SYNC</strong> locks a deck to the other deck's tempo &amp; beat ·
+      Nudge — Deck&nbsp;A <kbd>Q</kbd>/<kbd>W</kbd> · Deck&nbsp;B <kbd>O</kbd>/<kbd>P</kbd>
+    </div>
+
+    <div class="debug-panel" id="debug-panel">
+      <div class="debug-deck" id="dbg-a-wrap"><h4>Deck A timing</h4><pre id="dbg-a">—</pre></div>
+      <div class="debug-deck" id="dbg-b-wrap"><h4>Deck B timing</h4><pre id="dbg-b">—</pre></div>
+    </div>
+
+    <a class="project-link" href="https://github.com/sudockin/dj-mixer" target="_blank" rel="noopener">View source on GitHub</a>
+  </main>
+
+  <div class="shortcuts-panel" id="shortcuts-panel">
+    <div class="shortcuts-card">
+      <h3>Keyboard shortcuts</h3>
+      <table>
+        <tr><td><kbd>Q</kbd> / <kbd>W</kbd></td><td>Deck A — nudge back / forward</td></tr>
+        <tr><td><kbd>O</kbd> / <kbd>P</kbd></td><td>Deck B — nudge back / forward</td></tr>
+        <tr><td><kbd>Z</kbd></td><td>Deck A — jump to cue</td></tr>
+        <tr><td><kbd>M</kbd></td><td>Deck B — jump to cue</td></tr>
+        <tr><td><kbd>G</kbd></td><td>Toggle quantize (beat snap)</td></tr>
+        <tr><td><kbd>?</kbd></td><td>Open / close this panel</td></tr>
+      </table>
+      <button class="shortcuts-close" id="shortcuts-close">Close</button>
+    </div>
+  </div>
+
+  <div class="rotate-overlay" id="rotate-overlay">
+    <div class="rotate-card">
+      <div class="rotate-icon">📱</div>
+      <div class="rotate-title">Rotate to landscape</div>
+      <div class="rotate-sub">Turn your phone sideways for the full DJ mixer.</div>
+    </div>
+  </div>
+
+  <!-- WaveSurfer must load (non-deferred) before the inline script runs -->
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+  <script src="https://www.youtube.com/iframe_api" defer></script>
+  <script>
+  (function () {
+    'use strict';
+
+    if (location.protocol === 'file:') {
+      document.getElementById('file-warning').style.display = 'block';
+    }
+
+    // Royalty-free demo tracks (Kevin MacLeod, CC-BY, via archive.org).
+    // These hosts send `Access-Control-Allow-Origin: *`, so WaveSurfer can
+    // fetch + decode them for a real waveform and BPM detection.
+    var DEMOS = {
+      a: { src: 'https://archive.org/download/feelingoodbykevinmacleod1/feelin-good-by-kevin-macleod%20(1).mp3', name: "Feelin' Good — Kevin MacLeod" },
+      b: { src: 'https://archive.org/download/verano-sensual-by-kevin-macleod/verano-sensual-by-kevin-macleod.mp3', name: 'Verano Sensual — Kevin MacLeod' }
+    };
+
+    var AUDIO_EXTS   = /\.(mp3|ogg|wav|flac|m4a|aac|opus|webm)(\?.*)?$/i;
+    var LOAD_TIMEOUT = 12000; // ms before declaring load failure
+    var PLAY_CHECK   = 3500;  // ms after playVideo() to verify buffering started
+
+    var YT_ERRORS = {
+      2:   'Invalid video — check the URL and try again.',
+      5:   'This video can\'t play in this browser.',
+      100: 'Video not found — it may have been removed.',
+      101: 'This video can\'t be embedded here.\nTry another URL or open in YouTube.',
+      150: 'This video can\'t be embedded here.\nTry another URL or open in YouTube.'
+    };
+
+    // ── State ─────────────────────────────────────────────────────────────
+    var ytPlayers      = { a: null, b: null }; // YT.Player
+    var waveEls        = { a: null, b: null }; // WaveSurfer (waveform + BPM)
+    var mediaEls       = { a: null, b: null }; // HTMLAudioElement fallback (CORS-less audio)
+    var audioEngine    = { a: null, b: null }; // 'wave' | 'media' (when deckType==='audio')
+    var wsPendingSrc   = { a: null, b: null }; // remembers src so we can fall back on WaveSurfer error
+    var deckType       = { a: 'audio', b: 'audio' }; // 'youtube' | 'audio'
+    var vidIds         = { a: null, b: null };
+    var pendingYTLoads = { a: null, b: null };
+    var loadTimers     = { a: null, b: null };
+    var playTimers     = { a: null, b: null };
+    var states         = { a: 'idle', b: 'idle' };
+    var tapArrays      = { a: [], b: [] };
+    var detectedBPM    = { a: null, b: null };
+    var failedUrls     = []; // debug log
+
+    // ── Beatmatch / timing state ──────────────────────────────────────────
+    function newTiming() {
+      return { knownBpm:null, detectedBpm:null, normBpm:null, beatOffset:0,
+               beatDurSource:0, rate:1, effBpm:null, currentBeat:0, beatPhase:0,
+               beatDurMs:0, currentTime:0, duration:0, syncTrim:1,
+               master:false, follower:false, activeBeatIdx:-1 };
+    }
+    var timing     = { a: newTiming(), b: newTiming() };
+    var masterDeck = null;
+    var demoCache  = { a: null, b: null };
+    var DEMO_META  = {
+      a: { bpm: 120, seconds: 130, name: 'Beat Loop A · 120 BPM' },
+      b: { bpm: 126, seconds: 130, name: 'Beat Loop B · 126 BPM' }
+    };
+    function other(d) { return d === 'a' ? 'b' : 'a'; }
+
+    // ── Mixing-control state (cue / loop / quantize / crossfader curve) ──────
+    function newLoop() { return { active:false, bars:0, start:0, end:0 }; }
+    var cues     = { a: null, b: null };       // cue point (source seconds)
+    var loops    = { a: newLoop(), b: newLoop() };
+    var quantize = false;                       // snap cue/loop to nearest beat
+    var cfCurve  = 'smooth';                     // 'smooth' | 'linear' | 'cut'
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function el(id) { return document.getElementById(id); }
+
+    function extractVideoId(raw) {
+      var s = raw.trim();
+      var m = s.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+      if (m) return m[1];
+      if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+      return null;
+    }
+
+    function classifyInput(raw) {
+      if (!raw || !raw.trim()) return null;
+      var s = raw.trim();
+      if (AUDIO_EXTS.test(s)) return { type: 'audio', src: s, name: s.split('/').pop().split('?')[0] };
+      var id = extractVideoId(s);
+      if (id) return { type: 'youtube', id: id };
+      return null;
+    }
+
+    function flashInvalid(input) {
+      input.classList.remove('invalid');
+      void input.offsetWidth;
+      input.classList.add('invalid');
+      setTimeout(function () { input.classList.remove('invalid'); }, 600);
+    }
+
+    // ── BPM detection (RMS energy peaks over first 90s) ───────────────────
+    function detectBPM(audioBuffer) {
+      try {
+        var raw = audioBuffer.getChannelData(0);
+        var sr  = audioBuffer.sampleRate;
+        var maxSamples = Math.min(raw.length, sr * 90);
+        var win = Math.floor(sr * 0.05); // 50ms windows
+        var energies = [];
+        for (var i = 0; i < maxSamples; i += win) {
+          var sum = 0, count = Math.min(win, maxSamples - i);
+          for (var j = i; j < i + count; j++) sum += raw[j] * raw[j];
+          energies.push(sum / count);
+        }
+        var mean = energies.reduce(function (a, b) { return a + b; }, 0) / energies.length;
+        var thr  = mean * 1.3;
+        var minGap = Math.floor(0.3 * (sr / win));
+        var peaks = [], lastPeak = -minGap;
+        for (var k = 1; k < energies.length - 1; k++) {
+          if (energies[k] > thr &&
+              energies[k] >= energies[k - 1] &&
+              energies[k] >= energies[k + 1] &&
+              k - lastPeak >= minGap) {
+            peaks.push(k);
+            lastPeak = k;
+          }
+        }
+        if (peaks.length < 4) return null;
+        var intervals = [];
+        for (var p = 1; p < peaks.length; p++) {
+          var iv = (peaks[p] - peaks[p - 1]) * win / sr;
+          if (iv > 0.25 && iv < 2.5) intervals.push(iv);
+        }
+        if (intervals.length < 3) return null;
+        intervals.sort(function (a, b) { return a - b; });
+        var median = intervals[Math.floor(intervals.length / 2)];
+        var bpm = 60 / median;
+        while (bpm < 60)  bpm *= 2;
+        while (bpm > 180) bpm /= 2;
+        return Math.round(bpm);
+      } catch (e) { return null; }
+    }
+
+    function setBPMDisplay(deck, val) {
+      el('bpm-' + deck).textContent = (val !== null && val !== undefined) ? String(val) : '—';
+    }
+
+    // ── Tap tempo ─────────────────────────────────────────────────────────
+    function handleTap(deck) {
+      var now  = Date.now();
+      var taps = tapArrays[deck];
+      if (taps.length && now - taps[taps.length - 1] > 2000) taps.length = 0;
+      taps.push(now);
+      if (taps.length > 8) taps.shift();
+      if (taps.length >= 2) {
+        var ivs = [];
+        for (var i = 1; i < taps.length; i++) ivs.push(taps[i] - taps[i - 1]);
+        var avg = ivs.reduce(function (a, b) { return a + b; }, 0) / ivs.length;
+        setBPMDisplay(deck, Math.round(60000 / avg));
+      }
+    }
+
+    // ── Volume / crossfader ───────────────────────────────────────────────
+    function setAudioVolume(deck, v) {
+      v = Math.max(0, Math.min(1, v));
+      if (audioEngine[deck] === 'media') {
+        if (mediaEls[deck]) { try { mediaEls[deck].volume = v; } catch(e) {} }
+      } else {
+        if (waveEls[deck]) { try { waveEls[deck].setVolume(v); } catch(e) {} }
+      }
+    }
+
+    // Crossfader curve → [gainA, gainB] for fader position t (0..1)
+    function curveGain(t) {
+      if (cfCurve === 'linear') return [1 - t, t];
+      if (cfCurve === 'cut') {
+        var w = 0.08; // narrow transition near centre
+        var gA = Math.max(0, Math.min(1, (0.5 + w - t) / (2 * w)));
+        var gB = Math.max(0, Math.min(1, (t - (0.5 - w)) / (2 * w)));
+        return [gA, gB];
+      }
+      // smooth = equal-power (no volume dip through the middle)
+      return [Math.cos(t * Math.PI / 2), Math.sin(t * Math.PI / 2)];
+    }
+
+    function applyMix() {
+      var t  = parseInt(el('crossfader').value) / 100;
+      var vA = parseInt(el('vol-a').value) / 100;
+      var vB = parseInt(el('vol-b').value) / 100;
+      var g  = curveGain(t);
+
+      if (deckType.a === 'youtube') {
+        try { if (ytPlayers.a && ytPlayers.a.setVolume) ytPlayers.a.setVolume(Math.round(vA * g[0] * 100)); } catch(e) {}
+      } else {
+        setAudioVolume('a', vA * g[0]);
+      }
+
+      if (deckType.b === 'youtube') {
+        try { if (ytPlayers.b && ytPlayers.b.setVolume) ytPlayers.b.setVolume(Math.round(vB * g[1] * 100)); } catch(e) {}
+      } else {
+        setAudioVolume('b', vB * g[1]);
+      }
+    }
+
+    // ── State machine ─────────────────────────────────────────────────────
+    function setState(deck, newState, errorMsg) {
+      states[deck] = newState;
+
+      var overlay = el('overlay-' + deck);
+      var icon    = overlay.querySelector('.overlay-icon');
+      var msgEl   = overlay.querySelector('.overlay-msg');
+      var ytLink  = el('yt-link-' + deck);
+      var badge   = el('badge-' + deck);
+      var playBtn = el('play-' + deck);
+
+      badge.setAttribute('data-state', newState);
+      badge.textContent = newState;
+
+      if (newState === 'ready' || newState === 'playing') {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('loading');
+        playBtn.disabled = false;
+      } else {
+        overlay.classList.remove('hidden');
+        overlay.classList.toggle('loading', newState === 'loading');
+        playBtn.disabled = true;
+      }
+
+      if (newState === 'loading') {
+        icon.textContent = '';
+        msgEl.textContent = 'Loading…';
+        ytLink.style.display = 'none';
+      } else if (newState === 'idle') {
+        icon.textContent = '🎵';
+        msgEl.textContent = 'Load a track to begin';
+        ytLink.style.display = 'none';
+      } else if (newState === 'error') {
+        icon.textContent = '⚠️';
+        msgEl.textContent = errorMsg || 'This track cannot be played here.\nTry another URL or open in YouTube.';
+        if (deckType[deck] === 'youtube' && vidIds[deck]) {
+          ytLink.href = 'https://www.youtube.com/watch?v=' + vidIds[deck];
+          ytLink.style.display = 'inline-block';
+        } else {
+          ytLink.style.display = 'none';
+        }
+      }
+
+      playBtn.textContent = (newState === 'playing') ? 'Pause' : 'Play';
+    }
+
+    // ── Timers ────────────────────────────────────────────────────────────
+    function armLoadTimer(deck) {
+      clearTimeout(loadTimers[deck]);
+      loadTimers[deck] = setTimeout(function () {
+        if (states[deck] === 'loading') {
+          failedUrls.push({ deck: deck, src: vidIds[deck], reason: 'timeout' });
+          setState(deck, 'error', 'Load timed out.\nCheck your connection or try another URL.');
+        }
+      }, LOAD_TIMEOUT);
+    }
+
+    function clearLoadTimer(deck) { clearTimeout(loadTimers[deck]); loadTimers[deck] = null; }
+
+    // Detects YouTube sign-in / bot verification: playVideo() called but
+    // player never reaches BUFFERING/PLAYING within PLAY_CHECK ms.
+    function armPlayCheck(deck) {
+      clearTimeout(playTimers[deck]);
+      playTimers[deck] = setTimeout(function () {
+        if (states[deck] !== 'playing') {
+          try {
+            var s = ytPlayers[deck] && ytPlayers[deck].getPlayerState();
+            if (s === -1 || s === 2 || s === 5) {
+              failedUrls.push({ deck: deck, src: vidIds[deck], reason: 'play-no-progress' });
+              setState(deck, 'error', 'This video may require sign-in or bot verification.\nTry another URL or open it in YouTube.');
+            }
+          } catch(e) {}
+        }
+      }, PLAY_CHECK);
+    }
+
+    function clearPlayCheck(deck) { clearTimeout(playTimers[deck]); playTimers[deck] = null; }
+
+    function isYouTubeReady() {
+      return typeof YT !== 'undefined' && YT.Player;
+    }
+
+    // ── Mode switching ────────────────────────────────────────────────────
+    function stopAudioEngines(deck) {
+      if (waveEls[deck]) { try { waveEls[deck].destroy(); } catch(e) {} waveEls[deck] = null; }
+      if (mediaEls[deck]) {
+        try { mediaEls[deck].pause(); mediaEls[deck].removeAttribute('src'); mediaEls[deck].load(); } catch(e) {}
+        mediaEls[deck] = null;
+      }
+      wsPendingSrc[deck] = null;
+      audioEngine[deck] = null;
+    }
+
+    function enterYouTubeMode(deck) {
+      stopAudioEngines(deck);
+      el('audio-vis-' + deck).style.display = 'none';
+      el('tempo-row-' + deck).classList.add('yt-mode');
+      el('deck-' + deck).classList.add('yt');
+      deckType[deck] = 'youtube';
+      clearBeatGrid(deck);
+      resetDeckMix(deck);
+      clearRoles();
+      updateSyncAvailability(deck);
+    }
+
+    function enterAudioMode(deck) {
+      if (ytPlayers[deck]) { try { ytPlayers[deck].destroy(); } catch(e) {} ytPlayers[deck] = null; }
+      el('audio-vis-' + deck).style.display = 'flex';
+      el('tempo-row-' + deck).classList.remove('yt-mode');
+      el('deck-' + deck).classList.remove('yt');
+      deckType[deck] = 'audio';
+    }
+
+    // ── YouTube player events ─────────────────────────────────────────────
+    function makeReadyHandler(deck) {
+      return function () {
+        clearLoadTimer(deck);
+        setState(deck, 'ready');
+        applyMix();
+      };
+    }
+
+    function makeStateChangeHandler(deck) {
+      return function (e) {
+        var S = YT.PlayerState;
+        switch (e.data) {
+          case S.PLAYING:
+            clearLoadTimer(deck);
+            clearPlayCheck(deck);
+            setState(deck, 'playing');
+            break;
+          case S.BUFFERING:
+            clearPlayCheck(deck); // video IS loading — not a bot check
+            break;
+          case S.PAUSED:
+          case S.CUED:
+            clearPlayCheck(deck);
+            clearLoadTimer(deck);
+            setState(deck, 'ready');
+            break;
+          case S.ENDED:
+            setState(deck, 'ready');
+            break;
+        }
+      };
+    }
+
+    function makeErrorHandler(deck) {
+      return function (e) {
+        clearLoadTimer(deck);
+        clearPlayCheck(deck);
+        var msg = YT_ERRORS[e.data] || ('Player error (code ' + e.data + ').\nTry another video.');
+        failedUrls.push({ deck: deck, src: vidIds[deck], ytCode: e.data });
+        console.error('[DJ Mixer] Deck ' + deck.toUpperCase() + ' YT error ' + e.data);
+        setState(deck, 'error', msg);
+      };
+    }
+
+    // ── YouTube player lifecycle ──────────────────────────────────────────
+    function createYTPlayer(deck, videoId) {
+      vidIds[deck] = videoId;
+      setState(deck, 'loading');
+      armLoadTimer(deck);
+      try {
+        ytPlayers[deck] = new YT.Player('player-' + deck, {
+          videoId: videoId,
+          playerVars: { rel: 0, playsinline: 1 },
+          events: {
+            onReady:       makeReadyHandler(deck),
+            onStateChange: makeStateChangeHandler(deck),
+            onError:       makeErrorHandler(deck)
+          }
+        });
+      } catch (err) {
+        clearLoadTimer(deck);
+        console.error('[DJ Mixer] createYTPlayer failed for deck ' + deck, err);
+        setState(deck, 'error', 'Could not initialise player.\nRefresh and try again.');
+      }
+    }
+
+    function loadYouTube(deck, videoId) {
+      enterYouTubeMode(deck);
+      vidIds[deck] = videoId;
+      var player = ytPlayers[deck];
+
+      if (!player || typeof player.loadVideoById !== 'function') {
+        if (player) { try { player.destroy(); } catch(e) {} }
+        createYTPlayer(deck, videoId);
+        return;
+      }
+
+      setState(deck, 'loading');
+      armLoadTimer(deck);
+      try {
+        player.loadVideoById(videoId);
+      } catch (err) {
+        clearLoadTimer(deck);
+        console.error('[DJ Mixer] loadVideoById failed deck ' + deck, err);
+        setState(deck, 'error', 'Failed to load video. Try again.');
+      }
+    }
+
+    function loadYouTubeWhenReady(deck, videoId) {
+      if (!isYouTubeReady()) {
+        pendingYTLoads[deck] = videoId;
+        enterYouTubeMode(deck);
+        vidIds[deck] = videoId;
+        setState(deck, 'loading');
+        armLoadTimer(deck);
+        return;
+      }
+      pendingYTLoads[deck] = null;
+      loadYouTube(deck, videoId);
+    }
+
+    // ── WaveSurfer / audio ────────────────────────────────────────────────
+    function wireWaveEvents(deck, ws) {
+      ws.on('ready', function () {
+        audioEngine[deck] = 'wave';
+        wsPendingSrc[deck] = null;
+        clearLoadTimer(deck);
+        setState(deck, 'ready');
+        applyMix();
+        // Re-apply current tempo to the freshly loaded track
+        applyTempo(deck);
+        if (timing[deck].knownBpm) {
+          // Generated demo loop — exact BPM, beat 1 at t=0 (no detection needed)
+          setTimingBpm(deck, timing[deck].knownBpm);
+        } else {
+          // BPM detection (async so it doesn't block the ready paint)
+          setBPMDisplay(deck, '…');
+          setTimeout(function () {
+            var bpm = null;
+            try { var buf = ws.getDecodedData(); bpm = buf ? detectBPM(buf) : null; } catch (e) {}
+            tapArrays[deck] = [];
+            setTimingBpm(deck, bpm);
+          }, 50);
+        }
+      });
+
+      ws.on('play',   function () { setState(deck, 'playing'); });
+      ws.on('pause',  function () { if (states[deck] !== 'error') setState(deck, 'ready'); });
+      ws.on('finish', function () { setState(deck, 'ready'); });
+
+      // WaveSurfer must FETCH the audio to draw a waveform — that needs CORS.
+      // Many audio hosts (incl. the demo tracks) don't send CORS headers, so
+      // the fetch fails even though the browser can still PLAY the file.
+      // Fall back to a plain <audio> element instead of erroring out.
+      ws.on('error', function (err) {
+        if (!wsPendingSrc[deck]) return; // already ready / handled
+        var pending = wsPendingSrc[deck];
+        console.warn('[DJ Mixer] Deck ' + deck.toUpperCase() + ' WaveSurfer failed (likely CORS) — using direct audio:', err);
+        failedUrls.push({ deck: deck, src: pending.url, error: String(err), fallback: 'media' });
+        fallbackToMedia(deck, pending.url, pending.name);
+      });
+    }
+
+    function ensureWave(deck) {
+      if (waveEls[deck]) return waveEls[deck];
+      var ws = WaveSurfer.create({
+        container:     '#waveform-' + deck,
+        waveColor:     deck === 'a' ? 'rgba(46, 231, 255, 0.35)' : 'rgba(255, 59, 213, 0.35)',
+        progressColor: deck === 'a' ? '#2ee7ff' : '#ff3bd5',
+        cursorColor:   'rgba(255, 255, 255, 0.55)',
+        height:        90,
+        normalize:     true,
+        interact:      true
+      });
+      waveEls[deck] = ws;
+      wireWaveEvents(deck, ws);
+      return ws;
+    }
+
+    // Plain HTMLAudioElement playback — works for cross-origin audio without
+    // CORS (no waveform / auto-BPM, but tempo + tap tempo still work).
+    function wireMediaEvents(deck, audio) {
+      audio.addEventListener('canplay', function () {
+        clearLoadTimer(deck);
+        setState(deck, 'ready');
+        applyMix();
+        applyTempo(deck);
+      });
+      audio.addEventListener('playing', function () { setState(deck, 'playing'); });
+      audio.addEventListener('pause',   function () { if (states[deck] !== 'error') setState(deck, 'ready'); });
+      audio.addEventListener('ended',   function () { setState(deck, 'ready'); });
+      audio.addEventListener('error',   function () {
+        clearLoadTimer(deck);
+        var code = audio.error ? audio.error.code : '?';
+        failedUrls.push({ deck: deck, src: audio.src, mediaErrorCode: code });
+        setState(deck, 'error', 'Audio failed to load.\nCheck the URL or try another file.');
+      });
+    }
+
+    function fallbackToMedia(deck, url, name) {
+      if (audioEngine[deck] === 'media') return; // already fell back
+      wsPendingSrc[deck] = null;
+      if (waveEls[deck]) { try { waveEls[deck].destroy(); } catch(e) {} waveEls[deck] = null; }
+      el('waveform-' + deck).style.display = 'none'; // hide empty canvas; track name remains
+      audioEngine[deck] = 'media';
+
+      var audio = mediaEls[deck];
+      if (!audio) {
+        audio = new Audio();
+        mediaEls[deck] = audio;
+        wireMediaEvents(deck, audio);
+      }
+      setState(deck, 'loading');
+      armLoadTimer(deck);
+      try { audio.src = url; audio.load(); }
+      catch (err) {
+        clearLoadTimer(deck);
+        setState(deck, 'error', 'Audio failed to load.\nCheck the URL or try another file.');
+      }
+    }
+
+    function loadAudio(deck, src, name, opts) {
+      opts = opts || {};
+      enterAudioMode(deck);
+      stopAudioEngines(deck); // clear whatever this deck was running before
+      var url   = (typeof src === 'string') ? src : URL.createObjectURL(src);
+      var label = name || (typeof src === 'string' ? src.split('/').pop().split('?')[0] : src.name);
+
+      el('track-name-' + deck).textContent = label;
+      el('waveform-' + deck).style.display = ''; // restore (may have been hidden by a prior fallback)
+      detectedBPM[deck] = null;
+      tapArrays[deck] = [];
+      setBPMDisplay(deck, null);
+
+      // Reset beatmatch timing for this deck
+      timing[deck] = newTiming();
+      timing[deck].knownBpm   = opts.knownBpm || null;
+      timing[deck].beatOffset = opts.beatOffset || 0;
+      el('bpm-sub-' + deck).textContent = 'det — · eff —';
+      el('tempo-' + deck).value = 0;
+      el('tempo-pct-' + deck).textContent = '0.0%';
+      clearBeatGrid(deck);
+      resetDeckMix(deck);
+      clearRoles();
+      updateSyncAvailability(deck);
+
+      setState(deck, 'loading');
+      armLoadTimer(deck);
+
+      // If the WaveSurfer library didn't load (CDN blocked / offline), degrade
+      // gracefully to a plain <audio> element instead of hanging on 'loading'.
+      if (typeof WaveSurfer === 'undefined') {
+        fallbackToMedia(deck, url, label);
+        return;
+      }
+
+      // Try WaveSurfer first (waveform + BPM); fall back to <audio> on CORS error.
+      wsPendingSrc[deck] = { url: url, name: label };
+      audioEngine[deck] = 'wave';
+      var ws = ensureWave(deck);
+      try {
+        var p = ws.load(url);
+        if (p && typeof p.catch === 'function') {
+          p.catch(function (err) {
+            if (wsPendingSrc[deck]) fallbackToMedia(deck, url, label);
+          });
+        }
+      } catch (err) {
+        fallbackToMedia(deck, url, label);
+      }
+    }
+
+    // ── Tempo / pitch ─────────────────────────────────────────────────────
+    function applyTempo(deck) {
+      var pct  = parseFloat(el('tempo-' + deck).value) || 0;
+      var rate = getDeckRate(deck); // includes phase-lock trim while synced
+      el('tempo-pct-' + deck).textContent = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
+      if (audioEngine[deck] === 'media') {
+        var audio = mediaEls[deck];
+        if (audio) {
+          try {
+            audio.playbackRate = rate;
+            // Let pitch follow tempo (turntable behaviour)
+            audio.preservesPitch = false;
+            audio.mozPreservesPitch = false;
+            audio.webkitPreservesPitch = false;
+          } catch(e) {}
+        }
+      } else {
+        var ws = waveEls[deck];
+        if (ws) { try { ws.setPlaybackRate(rate, false); } catch(e) {} }
+      }
+    }
+
+    // ── Controls ──────────────────────────────────────────────────────────
+    function wireControls() {
+      ['a', 'b'].forEach(function (deck) {
+
+        // Load from URL input
+        el('load-' + deck).addEventListener('click', function () {
+          var input = el('url-' + deck);
+          var classified = classifyInput(input.value);
+          if (!classified) { flashInvalid(input); return; }
+          if (classified.type === 'audio') {
+            loadAudio(deck, classified.src, classified.name);
+          } else {
+            loadYouTubeWhenReady(deck, classified.id);
+          }
+          input.value = '';
+        });
+
+        el('url-' + deck).addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') el('load-' + deck).click();
+        });
+
+        // File upload
+        el('btn-file-' + deck).addEventListener('click', function () {
+          el('file-input-' + deck).click();
+        });
+
+        el('file-input-' + deck).addEventListener('change', function () {
+          var file = this.files[0];
+          if (file) loadAudio(deck, file, file.name);
+          this.value = ''; // reset so same file can be reloaded
+        });
+
+        // Demo track (generated beat loop — exact BPM, reliable sync)
+        el('btn-demo-' + deck).addEventListener('click', function () {
+          ensureAudioContextResumed();
+          loadDemo(deck);
+        });
+
+        // Play / Pause
+        el('play-' + deck).addEventListener('click', function () {
+          ensureAudioContextResumed();
+          if (deckType[deck] === 'audio') {
+            if (audioEngine[deck] === 'media') {
+              var audio = mediaEls[deck];
+              if (!audio) return;
+              if (audio.paused) {
+                audio.play().catch(function () { showTapToStart(deck); });
+              } else {
+                audio.pause();
+              }
+            } else {
+              var ws = waveEls[deck];
+              if (!ws) return;
+              try {
+                if (ws.isPlaying && ws.isPlaying()) {
+                  ws.pause();
+                } else {
+                  var pr = ws.play();
+                  if (pr && typeof pr.catch === 'function') pr.catch(function () { showTapToStart(deck); });
+                }
+              } catch (e) {
+                showTapToStart(deck);
+              }
+            }
+          } else {
+            var player = ytPlayers[deck];
+            if (!player) return;
+            try {
+              if (player.getPlayerState() === 1) {
+                player.pauseVideo();
+                clearPlayCheck(deck);
+              } else {
+                player.playVideo();
+                armPlayCheck(deck); // detect bot/sign-in freeze
+              }
+            } catch (err) {
+              console.error('[DJ Mixer] play/pause error deck ' + deck, err);
+            }
+          }
+        });
+
+        // Tap tempo
+        el('tap-' + deck).addEventListener('click', function () { handleTap(deck); });
+        el('reset-bpm-' + deck).addEventListener('click', function () {
+          tapArrays[deck] = [];
+          setBPMDisplay(deck, detectedBPM[deck]);
+        });
+
+        // Tempo / pitch slider — manual change breaks an active sync lock
+        el('tempo-' + deck).addEventListener('input', function () {
+          if (timing[deck].master || timing[deck].follower) clearRoles();
+          timing[deck].syncTrim = 1;
+          applyTempo(deck);
+        });
+        el('reset-tempo-' + deck).addEventListener('click', function () {
+          if (timing[deck].master || timing[deck].follower) clearRoles();
+          timing[deck].syncTrim = 1;
+          el('tempo-' + deck).value = 0;
+          applyTempo(deck);
+        });
+      });
+
+      el('crossfader').addEventListener('input', applyMix);
+      el('vol-a').addEventListener('input', applyMix);
+      el('vol-b').addEventListener('input', applyMix);
+    }
+
+    // ── Beat / timing engine ──────────────────────────────────────────────
+    function normalizeBpm(bpm) {
+      if (!bpm || !isFinite(bpm)) return null;
+      bpm = Math.abs(bpm);
+      while (bpm < 80)  bpm *= 2;   // practical DJ range 80–180
+      while (bpm > 180) bpm /= 2;
+      return bpm;
+    }
+
+    function getDeckRate(deck) {
+      if (deckType[deck] !== 'audio') return 1;
+      // slider pitch × tiny phase-lock trim (applied to the follower while synced)
+      return (1 + (parseFloat(el('tempo-' + deck).value) || 0) / 100) * (timing[deck].syncTrim || 1);
+    }
+
+    function getDeckTime(deck) {
+      try {
+        if (deckType[deck] === 'youtube') return (ytPlayers[deck] && ytPlayers[deck].getCurrentTime()) || 0;
+        if (audioEngine[deck] === 'media') return mediaEls[deck] ? mediaEls[deck].currentTime : 0;
+        if (waveEls[deck]) return waveEls[deck].getCurrentTime() || 0;
+      } catch (e) {}
+      return 0;
+    }
+
+    function getDeckDuration(deck) {
+      try {
+        if (deckType[deck] === 'youtube') return (ytPlayers[deck] && ytPlayers[deck].getDuration()) || 0;
+        if (audioEngine[deck] === 'media') return (mediaEls[deck] && mediaEls[deck].duration) || 0;
+        if (waveEls[deck]) return waveEls[deck].getDuration() || 0;
+      } catch (e) {}
+      return 0;
+    }
+
+    function seekDeck(deck, sec) {
+      sec = Math.max(0, sec);
+      try {
+        if (deckType[deck] === 'youtube') { if (ytPlayers[deck]) ytPlayers[deck].seekTo(sec, true); return; }
+        if (audioEngine[deck] === 'media') { if (mediaEls[deck]) mediaEls[deck].currentTime = sec; return; }
+        var ws = waveEls[deck];
+        if (ws) {
+          if (typeof ws.setTime === 'function') ws.setTime(sec);
+          else { var d = ws.getDuration(); if (d) ws.seekTo(sec / d); }
+        }
+      } catch (e) {}
+    }
+
+    function setTimingBpm(deck, rawBpm) {
+      var t = timing[deck];
+      t.detectedBpm  = rawBpm || null;
+      t.normBpm      = rawBpm ? normalizeBpm(rawBpm) : null;
+      t.beatDurSource = t.normBpm ? 60 / t.normBpm : 0;
+      detectedBPM[deck] = t.normBpm ? Math.round(t.normBpm) : null;
+      setBPMDisplay(deck, t.normBpm ? Math.round(t.normBpm) : null);
+      el('bpm-sub-' + deck).textContent = t.normBpm
+        ? 'det ' + Math.round(t.normBpm) + ' · eff ' + (t.normBpm * getDeckRate(deck)).toFixed(1)
+        : 'det — · eff —';
+      buildBeatGrid(deck);
+      updateSyncAvailability(deck);
+    }
+
+    // ── Beat grid ──────────────────────────────────────────────────────────
+    function clearBeatGrid(deck) {
+      var host = el('beatgrid-' + deck);
+      if (host) host.innerHTML = '';
+      timing[deck].activeBeatIdx = -1;
+    }
+
+    function buildBeatGrid(deck) {
+      var host = el('beatgrid-' + deck);
+      if (!host) return;
+      host.innerHTML = '';
+      timing[deck].activeBeatIdx = -1;
+      var t = timing[deck];
+      if (!t.normBpm) { host.style.display = 'none'; return; }
+      host.style.display = '';
+      var dur = getDeckDuration(deck);
+      if (!dur || !isFinite(dur) || dur <= 0) return;
+      var bd = 60 / t.normBpm;
+      t.beatDurSource = bd;
+      var frag = document.createDocumentFragment();
+      var k = 0, beatTime = t.beatOffset, max = 4000;
+      while (beatTime < dur && k < max) {
+        var line = document.createElement('div');
+        line.className = 'beat-line' + (k % 4 === 0 ? ' down' : '');
+        line.style.left = (beatTime / dur * 100) + '%';
+        frag.appendChild(line);
+        k++; beatTime = t.beatOffset + k * bd;
+      }
+      host.appendChild(frag);
+    }
+
+    function updateActiveBeat(deck, idx) {
+      var t = timing[deck];
+      if (idx === t.activeBeatIdx) return;
+      var host = el('beatgrid-' + deck);
+      if (!host) return;
+      var prev = host.children[t.activeBeatIdx];
+      if (prev) prev.classList.remove('active');
+      var cur = host.children[idx];
+      if (cur) cur.classList.add('active');
+      t.activeBeatIdx = idx;
+    }
+
+    // ── Sync availability + master/follower roles ──────────────────────────
+    function updateSyncAvailability(deck) {
+      var isAudio = deckType[deck] === 'audio';
+      var hasBpm  = isAudio && !!timing[deck].normBpm;
+      ['sync-', 'nudge-back-', 'nudge-fwd-'].forEach(function (p) {  // need BPM
+        var b = el(p + deck); if (b) b.disabled = !hasBpm;
+      });
+      ['cue-', 'setcue-'].forEach(function (p) {                      // cue needs only audio
+        var b = el(p + deck); if (b) b.disabled = !isAudio;
+      });
+      ['loop1-', 'loop2-', 'loop4-', 'loop8-', 'loopoff-'].forEach(function (p) { // loop needs BPM
+        var b = el(p + deck); if (b) b.disabled = !hasBpm;
+      });
+    }
+
+    function markRoles() {
+      ['a', 'b'].forEach(function (d) {
+        var b = el('sync-' + d); if (!b) return;
+        b.classList.toggle('master', timing[d].master);
+        b.classList.toggle('follower', timing[d].follower);
+        b.textContent = timing[d].master ? 'Master' : (timing[d].follower ? 'Synced' : 'Sync');
+      });
+    }
+
+    function clearRoles() {
+      timing.a.master = timing.a.follower = false;
+      timing.b.master = timing.b.follower = false;
+      masterDeck = null;
+      markRoles();
+    }
+
+    function flashSyncFail(deck) {
+      var b = el('sync-' + deck); if (!b) return;
+      b.classList.add('fail');
+      setTimeout(function () { b.classList.remove('fail'); }, 400);
+    }
+
+    // Sync `follower` to the OTHER deck (which must be an audio deck, playing).
+    function syncDeck(follower) {
+      var master = other(follower);
+      if (deckType[master] !== 'audio' || !timing[master].normBpm || states[master] !== 'playing') {
+        flashSyncFail(follower); return;
+      }
+      if (deckType[follower] !== 'audio' || !timing[follower].normBpm) { flashSyncFail(follower); return; }
+
+      // 1) Match tempo: follower effective BPM = master effective BPM
+      timing[follower].syncTrim = 1;
+      var mEff   = timing[master].normBpm * getDeckRate(master);
+      var fRate  = mEff / timing[follower].normBpm;
+      var fPct   = (fRate - 1) * 100;
+      var clamped = Math.max(-8, Math.min(8, fPct));
+      el('tempo-' + follower).value = clamped.toFixed(2);
+      applyTempo(follower);
+
+      // 2) Coarse phase align: jump follower's nearest beat onto master's phase
+      //    (the continuous phase-lock below then removes any seek-latency residual)
+      var bd     = 60 / timing[follower].normBpm;
+      var mPhase = ((getDeckTime(master) - timing[master].beatOffset) / (60 / timing[master].normBpm));
+      mPhase = ((mPhase % 1) + 1) % 1;
+      var tF     = getDeckTime(follower);
+      var rel    = tF - timing[follower].beatOffset;
+      var k      = Math.round(rel / bd - mPhase);
+      var target = timing[follower].beatOffset + (k + mPhase) * bd;
+      if (target < 0) target += bd;
+      var dur = getDeckDuration(follower);
+      if (dur && target > dur - 0.05) target -= bd;
+      seekDeck(follower, target);
+
+      // 3) Roles
+      timing.a.master = timing.a.follower = false;
+      timing.b.master = timing.b.follower = false;
+      timing[master].master   = true;
+      timing[follower].follower = true;
+      masterDeck = master;
+      markRoles();
+    }
+
+    // ── Nudge ───────────────────────────────────────────────────────────────
+    function nudge(deck, deltaSec) {
+      if (deckType[deck] !== 'audio' || !timing[deck].normBpm) return;
+      seekDeck(deck, Math.max(0, getDeckTime(deck) + deltaSec));
+      var b = el((deltaSec < 0 ? 'nudge-back-' : 'nudge-fwd-') + deck);
+      if (b) { b.classList.add('hit'); setTimeout(function () { b.classList.remove('hit'); }, 120); }
+    }
+
+    // ── Cue / loop / quantize / crossfader curve ────────────────────────────
+    function snapToBeat(deck, t) {
+      var tm = timing[deck];
+      if (!quantize || !tm.normBpm) return t;
+      var bd = tm.beatDurSource || (60 / tm.normBpm);
+      return tm.beatOffset + Math.round((t - tm.beatOffset) / bd) * bd;
+    }
+
+    function setCue(deck) {
+      if (deckType[deck] !== 'audio') return;
+      cues[deck] = Math.max(0, snapToBeat(deck, getDeckTime(deck)));
+      updateCueMarker(deck);
+    }
+
+    function jumpCue(deck) {
+      if (deckType[deck] !== 'audio') return;
+      if (cues[deck] == null) { setCue(deck); return; }
+      seekDeck(deck, cues[deck]);
+    }
+
+    function updateCueMarker(deck) {
+      var m = el('cue-marker-' + deck);
+      if (!m) return;
+      var dur = getDeckDuration(deck);
+      if (cues[deck] == null || !dur) { m.style.display = 'none'; return; }
+      m.style.display = 'block';
+      m.style.left = (cues[deck] / dur * 100) + '%';
+    }
+
+    function setLoop(deck, bars) {
+      var tm = timing[deck];
+      if (!tm.normBpm) return;
+      var lp = loops[deck];
+      if (lp.active && lp.bars === bars) { clearLoop(deck); return; } // toggle off
+      var bd = tm.beatDurSource || (60 / tm.normBpm);
+      var start = Math.max(0, snapToBeat(deck, getDeckTime(deck)));
+      lp.active = true; lp.bars = bars;
+      lp.start = start; lp.end = start + bars * 4 * bd; // bars × 4 beats, in source seconds
+      updateLoopUI(deck);
+    }
+
+    function clearLoop(deck) { loops[deck] = newLoop(); updateLoopUI(deck); }
+
+    function updateLoopUI(deck) {
+      var lp = loops[deck];
+      ['loop1-', 'loop2-', 'loop4-', 'loop8-'].forEach(function (p) {
+        var b = el(p + deck); if (!b) return;
+        b.classList.toggle('active', lp.active && +b.getAttribute('data-bars') === lp.bars);
+      });
+      var r = el('loop-region-' + deck);
+      if (!r) return;
+      var dur = getDeckDuration(deck);
+      if (!lp.active || !dur) { r.style.display = 'none'; return; }
+      r.style.display = 'block';
+      r.style.left = (lp.start / dur * 100) + '%';
+      r.style.width = ((lp.end - lp.start) / dur * 100) + '%';
+    }
+
+    // Wrap playback when inside an active loop (runs each frame). Loop length is
+    // an integer number of beats, so wrapping preserves beat phase (sync-safe).
+    function processLoops() {
+      ['a', 'b'].forEach(function (deck) {
+        var lp = loops[deck];
+        if (!lp.active || deckType[deck] !== 'audio' || states[deck] !== 'playing') return;
+        var ct = getDeckTime(deck);
+        if (ct >= lp.end - 0.004 || ct < lp.start - 0.05) seekDeck(deck, lp.start);
+      });
+    }
+
+    function setQuantize(on) {
+      quantize = !!on;
+      var b = el('quant-global');
+      if (b) { b.classList.toggle('active', quantize); b.textContent = 'Quantize: ' + (quantize ? 'On' : 'Off'); }
+    }
+
+    function setCfCurve(curve) {
+      cfCurve = curve;
+      var box = el('cf-curve');
+      if (box) Array.prototype.forEach.call(box.querySelectorAll('button'), function (b) {
+        b.classList.toggle('active', b.getAttribute('data-curve') === curve);
+      });
+      applyMix();
+    }
+
+    function resetDeckMix(deck) {
+      cues[deck] = null;
+      loops[deck] = newLoop();
+      updateCueMarker(deck);
+      updateLoopUI(deck);
+    }
+
+    // ── Phase meter + debug ─────────────────────────────────────────────────
+    function driftFor(d) {
+      var o = other(d);
+      if (!timing[d].normBpm || !timing[o].normBpm) return 0;
+      var x = timing[d].beatPhase - timing[o].beatPhase;
+      x = ((x + 0.5) % 1 + 1) % 1 - 0.5;
+      return x * ((timing[d].beatDurMs + timing[o].beatDurMs) / 2);
+    }
+
+    function updatePhaseMeter() {
+      var needle = el('phase-needle'), read = el('phase-readout'), roles = el('phase-roles');
+      var ok = deckType.a === 'audio' && deckType.b === 'audio' &&
+               timing.a.normBpm && timing.b.normBpm &&
+               states.a === 'playing' && states.b === 'playing';
+      if (!ok) {
+        needle.style.left = '50%';
+        needle.classList.remove('hot');
+        read.textContent = '— · —';
+        roles.textContent = masterDeck ? ('master ' + masterDeck.toUpperCase()) : '';
+        return;
+      }
+      var ref = masterDeck || 'a';
+      var fol = other(ref);
+      var d = timing[fol].beatPhase - timing[ref].beatPhase;
+      d = ((d + 0.5) % 1 + 1) % 1 - 0.5;
+      var beatMs = (timing[ref].beatDurMs + timing[fol].beatDurMs) / 2;
+      var driftMs = d * beatMs;
+      needle.style.left = (50 + Math.max(-1, Math.min(1, d * 2)) * 48) + '%';
+      needle.classList.toggle('hot', Math.abs(driftMs) > 30);
+      read.textContent = (driftMs >= 0 ? '+' : '') + driftMs.toFixed(0) + ' ms ' +
+        (Math.abs(driftMs) < 12 ? '· SYNCED' : (driftMs > 0 ? '· ' + fol.toUpperCase() + ' early' : '· ' + fol.toUpperCase() + ' late'));
+      roles.textContent = 'master ' + ref.toUpperCase() + ' · follower ' + fol.toUpperCase();
+    }
+
+    function debugText(t) {
+      return 'bpm norm : ' + (t.normBpm ? t.normBpm.toFixed(2) : '—') + '\n' +
+             'bpm raw  : ' + (t.detectedBpm ? t.detectedBpm.toFixed(2) : '—') + '\n' +
+             'bpm eff  : ' + (t.effBpm ? t.effBpm.toFixed(2) : '—') + '\n' +
+             'rate     : ' + t.rate.toFixed(4) + '\n' +
+             'time     : ' + t.currentTime.toFixed(3) + ' s\n' +
+             'duration : ' + (t.duration ? t.duration.toFixed(1) : '—') + ' s\n' +
+             'beat #   : ' + t.currentBeat + '\n' +
+             'phase    : ' + t.beatPhase.toFixed(3) + '\n' +
+             'beatDur  : ' + (t.beatDurMs ? t.beatDurMs.toFixed(1) : '—') + ' ms\n' +
+             'role     : ' + (t.master ? 'MASTER' : (t.follower ? 'follower' : '—'));
+    }
+
+    function updateDebug() {
+      if (!el('debug-chk').checked) return;
+      el('dbg-a').textContent = debugText(timing.a) + '\ndrift vs B: ' + driftFor('a').toFixed(1) + ' ms';
+      el('dbg-b').textContent = debugText(timing.b) + '\ndrift vs A: ' + driftFor('b').toFixed(1) + ' ms';
+    }
+
+    // ── Single rAF loop driving all live timing ─────────────────────────────
+    function tickTiming() {
+      processLoops();
+      ['a', 'b'].forEach(function (deck) {
+        var t = timing[deck];
+        if (deckType[deck] === 'audio' && t.normBpm) {
+          var ct   = getDeckTime(deck);
+          var rate = getDeckRate(deck);
+          t.rate = rate;
+          t.currentTime = ct;
+          t.duration = getDeckDuration(deck);
+          t.effBpm = t.normBpm * rate;
+          var bd = t.beatDurSource || (60 / t.normBpm);
+          var bf = (ct - t.beatOffset) / bd;
+          t.currentBeat = Math.floor(bf);
+          var ph = bf - Math.floor(bf); if (ph < 0) ph += 1;
+          t.beatPhase = ph;
+          t.beatDurMs = (60 / t.effBpm) * 1000;
+          el('bpm-' + deck).textContent = t.effBpm.toFixed(1);
+          el('bpm-sub-' + deck).textContent = 'det ' + Math.round(t.normBpm) + ' · eff ' + t.effBpm.toFixed(1);
+          if (states[deck] === 'playing') updateActiveBeat(deck, t.currentBeat);
+        } else {
+          t.effBpm = null;
+        }
+      });
+      lockSync();
+      updatePhaseMeter();
+      updateDebug();
+      requestAnimationFrame(tickTiming);
+    }
+
+    // Continuous phase-lock: gently trim the follower's playback rate so its
+    // beat phase converges to the master's and stays there (no audible seeks).
+    var lockFrame = 0;
+    function lockSync() {
+      if (!masterDeck) return;
+      var m = masterDeck, f = other(m);
+      if (!timing[f].follower) return;
+      if (states[m] !== 'playing' || states[f] !== 'playing') return;
+      if (deckType[m] !== 'audio' || deckType[f] !== 'audio' || !timing[m].normBpm || !timing[f].normBpm) return;
+      lockFrame++;
+      if (lockFrame % 6 !== 0) return; // ~10 Hz is plenty
+      var d = timing[f].beatPhase - timing[m].beatPhase;
+      d = ((d + 0.5) % 1 + 1) % 1 - 0.5;           // signed beats, (-0.5, 0.5]
+      var trim;
+      if (Math.abs(d * timing[f].beatDurMs) < 4) {  // deadband — hold steady, no wobble
+        trim = 1;
+      } else {
+        trim = 1 - 0.6 * d;                          // ahead → slow, behind → speed up
+        trim = Math.max(0.97, Math.min(1.03, trim)); // cap at ±3 %
+      }
+      if (Math.abs(trim - (timing[f].syncTrim || 1)) > 0.0008) {
+        timing[f].syncTrim = trim;
+        applyTempo(f);
+      }
+    }
+
+    function startTimingLoop() { requestAnimationFrame(tickTiming); }
+
+    function wireBeatControls() {
+      ['a', 'b'].forEach(function (deck) {
+        el('sync-' + deck).addEventListener('click', function () { ensureAudioContextResumed(); syncDeck(deck); });
+        el('nudge-back-' + deck).addEventListener('click', function () { nudge(deck, -0.03); });
+        el('nudge-fwd-' + deck).addEventListener('click', function () { nudge(deck, 0.03); });
+      });
+      document.addEventListener('keydown', function (e) {
+        var tag = (document.activeElement && document.activeElement.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        switch (e.key.toLowerCase()) {
+          case 'q': nudge('a', -0.03); e.preventDefault(); break;
+          case 'w': nudge('a',  0.03); e.preventDefault(); break;
+          case 'o': nudge('b', -0.03); e.preventDefault(); break;
+          case 'p': nudge('b',  0.03); e.preventDefault(); break;
+          case 'z': jumpCue('a'); e.preventDefault(); break;
+          case 'm': jumpCue('b'); e.preventDefault(); break;
+          case 'g': setQuantize(!quantize); e.preventDefault(); break;
+          case '?': el('shortcuts-panel').classList.toggle('open'); e.preventDefault(); break;
+        }
+      });
+      el('debug-chk').addEventListener('change', function () {
+        el('debug-panel').classList.toggle('open', this.checked);
+      });
+    }
+
+    function wireMixControls() {
+      ['a', 'b'].forEach(function (deck) {
+        el('setcue-' + deck).addEventListener('click', function () { ensureAudioContextResumed(); setCue(deck); });
+        el('cue-' + deck).addEventListener('click', function () { ensureAudioContextResumed(); jumpCue(deck); });
+        el('loopoff-' + deck).addEventListener('click', function () { clearLoop(deck); });
+        ['1', '2', '4', '8'].forEach(function (n) {
+          el('loop' + n + '-' + deck).addEventListener('click', function () { ensureAudioContextResumed(); setLoop(deck, +n); });
+        });
+      });
+      Array.prototype.forEach.call(el('cf-curve').querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () { setCfCurve(b.getAttribute('data-curve')); });
+      });
+      el('quant-global').addEventListener('click', function () { setQuantize(!quantize); });
+      el('keys-btn').addEventListener('click', function () { el('shortcuts-panel').classList.add('open'); });
+      el('shortcuts-close').addEventListener('click', function () { el('shortcuts-panel').classList.remove('open'); });
+      el('shortcuts-panel').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
+    }
+
+    // ── Procedural demo loops (exact BPM, beat 1 at t=0 → deterministic sync) ─
+    function makeNoiseBuffer(ctx, dur) {
+      var n = Math.floor(ctx.sampleRate * dur);
+      var b = ctx.createBuffer(1, n, ctx.sampleRate);
+      var d = b.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      return b;
+    }
+    function envGain(ctx, t, peak, dur) {
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      return g;
+    }
+    function kick(ctx, t) {
+      var o = ctx.createOscillator(), g = envGain(ctx, t, 0.9, 0.18);
+      o.frequency.setValueAtTime(150, t);
+      o.frequency.exponentialRampToValueAtTime(50, t + 0.11);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.2);
+    }
+    function snare(ctx, noise, t) {
+      var s = ctx.createBufferSource(); s.buffer = noise;
+      var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1200;
+      var g = envGain(ctx, t, 0.6, 0.16);
+      s.connect(hp).connect(g).connect(ctx.destination); s.start(t); s.stop(t + 0.2);
+      var o = ctx.createOscillator(), g2 = envGain(ctx, t, 0.3, 0.11); o.type = 'triangle'; o.frequency.value = 180;
+      o.connect(g2).connect(ctx.destination); o.start(t); o.stop(t + 0.13);
+    }
+    function hat(ctx, noise, t) {
+      var s = ctx.createBufferSource(); s.buffer = noise;
+      var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+      var g = envGain(ctx, t, 0.25, 0.04);
+      s.connect(hp).connect(g).connect(ctx.destination); s.start(t); s.stop(t + 0.06);
+    }
+    function bass(ctx, t, dur, freq) {
+      var o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = freq; lp.type = 'lowpass'; lp.frequency.value = 500;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.26, t + 0.02);
+      g.gain.setValueAtTime(0.26, t + dur * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(lp).connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+    }
+
+    function encodeWAV(buffer) {
+      var ch = buffer.getChannelData(0), sr = buffer.sampleRate, n = ch.length;
+      var ab = new ArrayBuffer(44 + n * 2), v = new DataView(ab);
+      function str(off, s) { for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); }
+      str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+      str(36, 'data'); v.setUint32(40, n * 2, true);
+      var off = 44;
+      for (var i = 0; i < n; i++) { var s = Math.max(-1, Math.min(1, ch[i])); v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2; }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    function generateDemoBlob(variant, bpm, seconds) {
+      var sr = 22050;
+      var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if (!OAC) return Promise.reject(new Error('No OfflineAudioContext'));
+      var ctx = new OAC(1, Math.ceil(seconds * sr), sr);
+      var noise = makeNoiseBuffer(ctx, 0.3);
+      var beatDur = 60 / bpm;
+      var totalBeats = Math.floor(seconds / beatDur);
+      var bassSeq = variant === 'a' ? [55.00, 55.00, 73.42, 65.41] : [61.74, 61.74, 49.00, 55.00];
+      for (var i = 0; i < totalBeats; i++) {
+        var t = i * beatDur, inBar = i % 4;
+        kick(ctx, t);
+        if (inBar === 1 || inBar === 3) snare(ctx, noise, t);
+        hat(ctx, noise, t + beatDur / 2);
+        if (variant === 'b' && inBar % 2 === 0) hat(ctx, noise, t + beatDur * 0.75);
+        bass(ctx, t, beatDur * 0.9, bassSeq[inBar]);
+      }
+      return ctx.startRendering().then(function (buf) { return URL.createObjectURL(encodeWAV(buf)); });
+    }
+
+    function loadDemo(deck) {
+      var meta = DEMO_META[deck];
+      setState(deck, 'loading');
+      var msg = el('overlay-' + deck).querySelector('.overlay-msg');
+      if (msg) msg.textContent = 'Building beat loop…';
+      var ready = demoCache[deck]
+        ? Promise.resolve(demoCache[deck])
+        : generateDemoBlob(deck, meta.bpm, meta.seconds).then(function (url) { demoCache[deck] = url; return url; });
+      ready.then(function (url) {
+        loadAudio(deck, url, meta.name, { knownBpm: meta.bpm, beatOffset: 0 });
+      }).catch(function (e) {
+        console.error('[DJ Mixer] demo generation failed, using fallback track', e);
+        loadAudio(deck, DEMOS[deck].src, DEMOS[deck].name);
+      });
+    }
+
+    // ── iOS / autoplay: resume audio on first user gesture ──────────────────
+    var sharedCtx = null, audioUnlocked = false;
+    function ensureAudioContextResumed() {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC && !sharedCtx) sharedCtx = new AC();
+        if (sharedCtx && sharedCtx.state === 'suspended') sharedCtx.resume();
+      } catch (e) {}
+      audioUnlocked = true;
+    }
+    function showTapToStart(deck) {
+      var ov = el('overlay-' + deck);
+      var msg = ov.querySelector('.overlay-msg');
+      var icon = ov.querySelector('.overlay-icon');
+      if (icon) icon.textContent = '👆';
+      if (msg) msg.textContent = 'Tap Play to start audio';
+      ov.classList.remove('hidden', 'loading');
+      el('yt-link-' + deck).style.display = 'none';
+      if (states[deck] !== 'error') states[deck] = 'ready';
+    }
+
+    // ── Orientation (mobile) ────────────────────────────────────────────────
+    function updateOrientation() {
+      var portrait = window.matchMedia('(max-width: 932px) and (orientation: portrait)').matches;
+      document.body.classList.toggle('force-rotate', portrait);
+    }
+
+    // ── Bootstrap ─────────────────────────────────────────────────────────
+    window.onYouTubeIframeAPIReady = function () {
+      ['a', 'b'].forEach(function (deck) {
+        if (pendingYTLoads[deck]) {
+          var videoId = pendingYTLoads[deck];
+          pendingYTLoads[deck] = null;
+          loadYouTube(deck, videoId);
+        }
+      });
+    };
+
+    wireControls();
+    wireBeatControls();
+    wireMixControls();
+    startTimingLoop();
+
+    // Resume audio on the very first user gesture (iOS autoplay policy)
+    window.addEventListener('pointerdown', ensureAudioContextResumed, { once: true });
+    window.addEventListener('touchstart',  ensureAudioContextResumed, { once: true });
+
+    // Orientation handling for mobile
+    updateOrientation();
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('orientationchange', updateOrientation);
+
+    loadDemo('a');
+    loadDemo('b');
+
+    // Fallback: if YT API already loaded (e.g. cached page), process queued YouTube loads.
+    if (isYouTubeReady()) {
+      window.onYouTubeIframeAPIReady();
+    }
+
+  }());
+  </script>
+
+</body>
+</html>
