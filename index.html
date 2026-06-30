@@ -1160,6 +1160,207 @@
       text-transform: uppercase;
     }
 
+    /* ── Library button + drawer ── */
+    .btn-lib {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 10px;
+      cursor: pointer;
+      padding: 2px 8px;
+      color: var(--cyan);
+      background: rgba(46, 231, 255, 0.08);
+      border: 1px solid rgba(46, 231, 255, 0.4);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .btn-lib:hover { background: rgba(46, 231, 255, 0.16); }
+
+    .lib-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 94;
+      background: rgba(5, 7, 12, 0.55);
+      backdrop-filter: blur(2px);
+    }
+    .lib-backdrop.open { display: block; }
+
+    .lib-drawer {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 95;
+      width: min(380px, 92vw);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      background: linear-gradient(180deg, #0c1018, #070a11);
+      border-right: 1px solid var(--line-strong);
+      box-shadow: 24px 0 60px rgba(0, 0, 0, 0.5);
+      padding-left: env(safe-area-inset-left);
+    }
+    .lib-drawer.open { transform: translateX(0); }
+
+    .lib-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .lib-head h2 {
+      color: var(--text);
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .lib-close {
+      cursor: pointer;
+      width: 30px; height: 30px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .lib-close:hover { color: var(--text); }
+
+    .lib-search {
+      position: relative;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .lib-search input {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 12px 0 34px;
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      font: 500 0.88rem var(--sans);
+      outline: none;
+    }
+    .lib-search input:focus { border-color: rgba(46, 231, 255, 0.6); }
+    .lib-search::before {
+      content: "🔍";
+      position: absolute;
+      left: 26px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .lib-body { flex: 1; overflow-y: auto; padding: 8px 10px 20px; }
+    .lib-section-title {
+      margin: 14px 8px 6px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .lib-empty {
+      margin: 30px 14px;
+      color: var(--muted-2);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .lib-item {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: var(--radius);
+      transition: background 0.15s;
+    }
+    .lib-item:hover { background: rgba(255, 255, 255, 0.045); }
+    .lib-thumb {
+      width: 44px; height: 44px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(46,231,255,0.2), rgba(255,59,213,0.18));
+      border: 1px solid var(--line);
+      font-size: 1.1rem;
+    }
+    .lib-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .lib-info { min-width: 0; }
+    .lib-title {
+      overflow: hidden;
+      color: var(--text);
+      font-size: 0.84rem;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .lib-artist {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 0.74rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .lib-meta {
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.03em;
+    }
+    .lib-actions { display: flex; gap: 4px; }
+    .lib-actions button {
+      cursor: pointer;
+      min-width: 30px; height: 30px;
+      padding: 0 6px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .lib-actions button:hover { color: var(--text); border-color: var(--line-strong); }
+    .lib-actions .la-a:hover { color: var(--cyan); border-color: var(--cyan); }
+    .lib-actions .la-b:hover { color: var(--magenta); border-color: var(--magenta); }
+    .lib-actions .la-fav.on { color: var(--red); border-color: rgba(255,84,112,0.5); background: rgba(255,84,112,0.12); }
+    .lib-actions .la-del:hover { color: var(--red); border-color: var(--red); }
+
+    /* ── Drag & drop ── */
+    .drop-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: var(--radius);
+      background: rgba(5, 7, 12, 0.82);
+      backdrop-filter: blur(3px);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    #deck-a.drag .drop-overlay { display: flex; border: 2px dashed var(--cyan); box-shadow: inset 0 0 40px rgba(46,231,255,0.25); }
+    #deck-b.drag .drop-overlay { display: flex; border: 2px dashed var(--magenta); box-shadow: inset 0 0 40px rgba(255,59,213,0.25); }
+    .drop-arrow { font-size: 1.8rem; animation: dropb 1s ease-in-out infinite; }
+    @keyframes dropb { 0%,100% { transform: translateY(-3px); } 50% { transform: translateY(3px); } }
+
     /* ── Touch usability (all touch devices) ── */
     input[type="range"] { touch-action: none; }
     button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -1273,7 +1474,7 @@
     <header class="masthead">
       <div class="masthead-kicker">Browser DJ console</div>
       <h1 class="title"><span class="title-mark" aria-hidden="true">MIX</span>DJ Mixer</h1>
-      <div class="masthead-status">Live in the browser<button class="btn-keys" id="keys-btn">⌨ Keys</button><label class="debug-toggle"><input type="checkbox" id="debug-chk">Debug</label></div>
+      <div class="masthead-status"><button class="btn-lib" id="lib-btn">📚 Library</button><button class="btn-keys" id="keys-btn">⌨ Keys</button><label class="debug-toggle"><input type="checkbox" id="debug-chk">Debug</label></div>
     </header>
 
     <div id="file-warning" class="system-warning">
@@ -1354,6 +1555,7 @@
         <span class="vol-label">Vol</span>
         <input type="range" id="vol-a" min="0" max="100" value="80" aria-label="Deck A volume">
       </div>
+      <div class="drop-overlay"><span class="drop-arrow">⬇</span><span>Drop on Deck A</span></div>
     </div>
 
     <!-- ── Crossfader ── -->
@@ -1445,6 +1647,7 @@
         <span class="vol-label">Vol</span>
         <input type="range" id="vol-b" min="0" max="100" value="80" aria-label="Deck B volume">
       </div>
+      <div class="drop-overlay"><span class="drop-arrow">⬇</span><span>Drop on Deck B</span></div>
     </div>
 
     </section>
@@ -1461,6 +1664,16 @@
 
     <a class="project-link" href="https://github.com/sudockin/dj-mixer" target="_blank" rel="noopener">View source on GitHub</a>
   </main>
+
+  <div class="lib-backdrop" id="lib-backdrop"></div>
+  <aside class="lib-drawer" id="lib-drawer" aria-label="Music library">
+    <div class="lib-head">
+      <h2>📚 Library</h2>
+      <button class="lib-close" id="lib-close" title="Close">✕</button>
+    </div>
+    <div class="lib-search"><input type="text" id="lib-search-input" placeholder="Search title, artist, source, BPM…" aria-label="Search library"></div>
+    <div class="lib-body" id="lib-body"></div>
+  </aside>
 
   <div class="shortcuts-panel" id="shortcuts-panel">
     <div class="shortcuts-card">
@@ -1554,6 +1767,8 @@
     var loops    = { a: newLoop(), b: newLoop() };
     var quantize = false;                       // snap cue/loop to nearest beat
     var cfCurve  = 'smooth';                     // 'smooth' | 'linear' | 'cut'
+    var recordedIds = { a: null, b: null };     // library record id of each deck's current track
+    var loadSeq     = { a: 0, b: 0 };           // load token — a stale async load must not clobber a newer one
 
     // ── Helpers ───────────────────────────────────────────────────────────
     function el(id) { return document.getElementById(id); }
@@ -1804,6 +2019,7 @@
         clearLoadTimer(deck);
         setState(deck, 'ready');
         applyMix();
+        if (recordedIds[deck]) updateTrackMeta(recordedIds[deck], { duration: getDeckDuration(deck) });
       };
     }
 
@@ -1888,6 +2104,11 @@
     }
 
     function loadYouTubeWhenReady(deck, videoId) {
+      loadSeq[deck] = (loadSeq[deck] || 0) + 1;
+      var yrec = recordTrack({ source: 'youtube', key: videoId, name: 'YouTube ' + videoId, artist: 'YouTube',
+                               thumb: 'https://i.ytimg.com/vi/' + videoId + '/mqdefault.jpg' });
+      recordedIds[deck] = yrec ? yrec.id : null;
+      fetchYouTubeMeta(videoId, yrec ? yrec.id : null);
       if (!isYouTubeReady()) {
         pendingYTLoads[deck] = videoId;
         enterYouTubeMode(deck);
@@ -1966,6 +2187,7 @@
         setState(deck, 'ready');
         applyMix();
         applyTempo(deck);
+        if (recordedIds[deck]) updateTrackMeta(recordedIds[deck], { duration: audio.duration });
       });
       audio.addEventListener('playing', function () { setState(deck, 'playing'); });
       audio.addEventListener('pause',   function () { if (states[deck] !== 'error') setState(deck, 'ready'); });
@@ -2002,12 +2224,20 @@
 
     function loadAudio(deck, src, name, opts) {
       opts = opts || {};
+      loadSeq[deck] = (loadSeq[deck] || 0) + 1;
       enterAudioMode(deck);
       stopAudioEngines(deck); // clear whatever this deck was running before
       var url   = (typeof src === 'string') ? src : URL.createObjectURL(src);
       var label = name || (typeof src === 'string' ? src.split('/').pop().split('?')[0] : src.name);
 
       el('track-name-' + deck).textContent = label;
+      // Auto-save to library (URL / file). Demos pass noRecord.
+      if (!opts.noRecord) {
+        var libRec = recordTrack({ source: (typeof src === 'string') ? 'url' : 'file', key: url, name: label });
+        recordedIds[deck] = libRec ? libRec.id : null;
+      } else {
+        recordedIds[deck] = null;
+      }
       el('waveform-' + deck).style.display = ''; // restore (may have been hidden by a prior fallback)
       detectedBPM[deck] = null;
       tapArrays[deck] = [];
@@ -2238,6 +2468,7 @@
         : 'det — · eff —';
       buildBeatGrid(deck);
       updateSyncAvailability(deck);
+      if (recordedIds[deck]) updateTrackMeta(recordedIds[deck], { bpm: t.normBpm ? Math.round(t.normBpm) : null, duration: getDeckDuration(deck) });
     }
 
     // ── Beat grid ──────────────────────────────────────────────────────────
@@ -2694,6 +2925,7 @@
 
     function loadDemo(deck) {
       var meta = DEMO_META[deck];
+      var gen = ++loadSeq[deck]; // claim this load; abandon if superseded by a user load
       setState(deck, 'loading');
       var msg = el('overlay-' + deck).querySelector('.overlay-msg');
       if (msg) msg.textContent = 'Building beat loop…';
@@ -2701,8 +2933,10 @@
         ? Promise.resolve(demoCache[deck])
         : generateDemoBlob(deck, meta.bpm, meta.seconds).then(function (url) { demoCache[deck] = url; return url; });
       ready.then(function (url) {
-        loadAudio(deck, url, meta.name, { knownBpm: meta.bpm, beatOffset: 0 });
+        if (loadSeq[deck] !== gen) return; // user loaded something else while we were generating
+        loadAudio(deck, url, meta.name, { knownBpm: meta.bpm, beatOffset: 0, noRecord: true });
       }).catch(function (e) {
+        if (loadSeq[deck] !== gen) return;
         console.error('[DJ Mixer] demo generation failed, using fallback track', e);
         loadAudio(deck, DEMOS[deck].src, DEMOS[deck].name);
       });
@@ -2729,6 +2963,215 @@
       if (states[deck] !== 'error') states[deck] = 'ready';
     }
 
+    // ── Music library (localStorage) ────────────────────────────────────────
+    var LIB_KEY = 'djmixer.library.v1';
+    var LIB_MAX = 500;
+    var library = loadLibrary();
+    var librarySearch = '';
+
+    function loadLibrary() {
+      try { var a = JSON.parse(localStorage.getItem(LIB_KEY)); return Array.isArray(a) ? a : []; }
+      catch (e) { return []; }
+    }
+    function saveLibrary() {
+      try { localStorage.setItem(LIB_KEY, JSON.stringify(library.slice(0, LIB_MAX))); } catch (e) {}
+    }
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+        return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+      });
+    }
+    function parseTitleArtist(name) {
+      var n = String(name || '').replace(/\.[a-z0-9]{2,4}$/i, '').trim();
+      var parts = n.split(/\s+[-–—]\s+/);
+      if (parts.length >= 2) return { artist: parts[0].trim(), title: parts.slice(1).join(' - ').trim() };
+      return { artist: '', title: n || 'Untitled' };
+    }
+    function findRec(id) {
+      for (var i = 0; i < library.length; i++) if (library[i].id === id) return library[i];
+      return null;
+    }
+
+    function recordTrack(info) {
+      if (!info || !info.key) return null;
+      var id = info.source + '|' + info.key;
+      var now = Date.now();
+      var rec = findRec(id);
+      if (rec) {
+        rec.lastPlayed = now;
+        rec.playCount = (rec.playCount || 0) + 1;
+        // bubble to front
+        library = library.filter(function (r) { return r.id !== id; });
+        library.unshift(rec);
+      } else {
+        var ta = parseTitleArtist(info.name);
+        rec = { id: id, source: info.source, key: info.key,
+                title: ta.title, artist: info.artist || ta.artist,
+                thumb: info.thumb || null, duration: null, bpm: null,
+                firstAdded: now, lastPlayed: now, playCount: 1, favorite: false };
+        library.unshift(rec);
+        if (library.length > LIB_MAX) library.length = LIB_MAX;
+      }
+      saveLibrary();
+      renderLibrary();
+      return rec;
+    }
+    function updateTrackMeta(id, meta) {
+      var rec = id && findRec(id);
+      if (!rec) return;
+      if (meta.duration != null && isFinite(meta.duration)) rec.duration = meta.duration;
+      if (meta.bpm != null) rec.bpm = meta.bpm;
+      if (meta.title) rec.title = meta.title;
+      if (meta.artist) rec.artist = meta.artist;
+      if (meta.thumb) rec.thumb = meta.thumb;
+      saveLibrary();
+      renderLibrary();
+    }
+    function favoriteTrack(id) {
+      var rec = findRec(id); if (!rec) return;
+      rec.favorite = !rec.favorite; saveLibrary(); renderLibrary();
+    }
+    function removeTrack(id) {
+      library = library.filter(function (r) { return r.id !== id; });
+      saveLibrary(); renderLibrary();
+    }
+    function loadTrackToDeck(deck, rec) {
+      ensureAudioContextResumed();
+      if (rec.source === 'youtube') loadYouTubeWhenReady(deck, rec.key);
+      else loadAudio(deck, rec.key, (rec.artist ? rec.artist + ' - ' : '') + rec.title);
+      closeLibrary();
+    }
+    function fetchYouTubeMeta(id, recId) {
+      if (!recId) return;
+      try {
+        fetch('https://www.youtube.com/oembed?format=json&url=https://www.youtube.com/watch?v=' + id)
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) { if (j) updateTrackMeta(recId, { title: j.title, artist: j.author_name }); })
+          .catch(function () {});
+      } catch (e) {}
+    }
+
+    // ── Library rendering ───────────────────────────────────────────────────
+    function fmtDur(s) {
+      if (s == null || !isFinite(s)) return '—';
+      var m = Math.floor(s / 60), ss = Math.floor(s % 60);
+      return m + ':' + (ss < 10 ? '0' : '') + ss;
+    }
+    function dayBucket(ts) {
+      var now = new Date();
+      var startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      var dayMs = 86400000;
+      if (ts >= startToday) return 'Today';
+      if (ts >= startToday - dayMs) return 'Yesterday';
+      if (ts >= startToday - 7 * dayMs) return 'Last 7 days';
+      return 'Older';
+    }
+    function matchSearch(r, q) {
+      if (!q) return true;
+      return (r.title + ' ' + r.artist + ' ' + r.source + ' ' + (r.bpm || '')).toLowerCase().indexOf(q) >= 0;
+    }
+    function libItemHTML(r) {
+      var thumb = r.thumb
+        ? '<img src="' + esc(r.thumb) + '" alt="" onerror="this.style.display=\'none\'">'
+        : (r.source === 'youtube' ? '▶' : (r.source === 'file' ? '🎵' : '🔗'));
+      var meta = [fmtDur(r.duration), r.bpm ? r.bpm + ' BPM' : null, r.source].filter(Boolean).join(' · ');
+      return '<div class="lib-item" data-id="' + esc(r.id) + '">' +
+        '<div class="lib-thumb">' + thumb + '</div>' +
+        '<div class="lib-info">' +
+          '<div class="lib-title">' + esc(r.title) + '</div>' +
+          '<div class="lib-artist">' + esc(r.artist || '—') + '</div>' +
+          '<div class="lib-meta">' + esc(meta) + '</div>' +
+        '</div>' +
+        '<div class="lib-actions">' +
+          '<button class="la-a" data-act="a" title="Load Deck A">A</button>' +
+          '<button class="la-b" data-act="b" title="Load Deck B">B</button>' +
+          '<button class="la-fav' + (r.favorite ? ' on' : '') + '" data-act="fav" title="Favorite">♥</button>' +
+          '<button class="la-del" data-act="del" title="Remove">🗑</button>' +
+        '</div></div>';
+    }
+    function libSection(title, items) {
+      if (!items.length) return '';
+      return '<div class="lib-section-title">' + title + '</div>' + items.map(libItemHTML).join('');
+    }
+    function renderLibrary() {
+      var body = el('lib-body'); if (!body) return;
+      var q = librarySearch.trim().toLowerCase();
+      var filtered = library.filter(function (r) { return matchSearch(r, q); });
+      if (!filtered.length) {
+        body.innerHTML = '<div class="lib-empty">' + (library.length
+          ? 'No tracks match “' + esc(librarySearch) + '”.'
+          : 'No tracks yet.<br>Load a URL, file, or YouTube link —<br>it’ll appear here automatically.') + '</div>';
+        return;
+      }
+      var byRecent = filtered.slice().sort(function (a, b) { return b.lastPlayed - a.lastPlayed; });
+      var html = '';
+      if (q) {
+        html = libSection('🔍 Results', byRecent);
+      } else {
+        html += libSection('❤️ Favorites', byRecent.filter(function (r) { return r.favorite; }));
+        html += libSection('🕓 Recently Loaded', byRecent.slice(0, 10));
+        var buckets = {};
+        byRecent.forEach(function (r) { var b = dayBucket(r.lastPlayed); (buckets[b] = buckets[b] || []).push(r); });
+        var hist = '';
+        ['Today', 'Yesterday', 'Last 7 days', 'Older'].forEach(function (b) {
+          if (buckets[b]) hist += '<div class="lib-section-title" style="opacity:.8">' + b + '</div>' + buckets[b].map(libItemHTML).join('');
+        });
+        html += '<div class="lib-section-title">🕒 History</div>' + hist;
+      }
+      body.innerHTML = html;
+    }
+
+    function openLibrary() { renderLibrary(); el('lib-drawer').classList.add('open'); el('lib-backdrop').classList.add('open'); }
+    function closeLibrary() { el('lib-drawer').classList.remove('open'); el('lib-backdrop').classList.remove('open'); }
+
+    function wireLibrary() {
+      el('lib-btn').addEventListener('click', openLibrary);
+      el('lib-close').addEventListener('click', closeLibrary);
+      el('lib-backdrop').addEventListener('click', closeLibrary);
+      el('lib-search-input').addEventListener('input', function () { librarySearch = this.value; renderLibrary(); });
+      el('lib-body').addEventListener('click', function (e) {
+        var btn = e.target.closest && e.target.closest('button[data-act]');
+        var item = e.target.closest && e.target.closest('.lib-item');
+        if (!btn || !item) return;
+        var rec = findRec(item.getAttribute('data-id'));
+        if (!rec) return;
+        var act = btn.getAttribute('data-act');
+        if (act === 'a') loadTrackToDeck('a', rec);
+        else if (act === 'b') loadTrackToDeck('b', rec);
+        else if (act === 'fav') favoriteTrack(rec.id);
+        else if (act === 'del') removeTrack(rec.id);
+      });
+      renderLibrary();
+    }
+
+    // ── Drag & drop onto decks ──────────────────────────────────────────────
+    function wireDragDrop() {
+      ['a', 'b'].forEach(function (deck) {
+        var dk = el('deck-' + deck);
+        var depth = 0;
+        dk.addEventListener('dragenter', function (e) { e.preventDefault(); depth++; dk.classList.add('drag'); });
+        dk.addEventListener('dragover', function (e) { e.preventDefault(); try { e.dataTransfer.dropEffect = 'copy'; } catch (x) {} });
+        dk.addEventListener('dragleave', function () { depth--; if (depth <= 0) { depth = 0; dk.classList.remove('drag'); } });
+        dk.addEventListener('drop', function (e) {
+          e.preventDefault(); depth = 0; dk.classList.remove('drag');
+          ensureAudioContextResumed();
+          var dt = e.dataTransfer; if (!dt) return;
+          if (dt.files && dt.files.length) {
+            var f = dt.files[0];
+            if (/audio\//.test(f.type) || /\.(mp3|ogg|wav|flac|m4a|aac|opus|webm)$/i.test(f.name)) {
+              loadAudio(deck, f, f.name);
+            }
+            return;
+          }
+          var txt = '';
+          try { txt = dt.getData('text/uri-list') || dt.getData('text/plain') || ''; } catch (x) {}
+          var c = classifyInput(txt);
+          if (c && c.type === 'audio') loadAudio(deck, c.src, c.name);
+          else if (c && c.type === 'youtube') loadYouTubeWhenReady(deck, c.id);
+        });
+      });
+    }
+
     // ── Orientation (mobile) ────────────────────────────────────────────────
     function updateOrientation() {
       var portrait = window.matchMedia('(max-width: 932px) and (orientation: portrait)').matches;
@@ -2749,6 +3192,8 @@
     wireControls();
     wireBeatControls();
     wireMixControls();
+    wireLibrary();
+    wireDragDrop();
     startTimingLoop();
 
     // Resume audio on the very first user gesture (iOS autoplay policy)
