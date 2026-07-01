@@ -21,6 +21,7 @@ on:
       - index.html
       - .nojekyll
       - RELEASE_NOTES.md
+      - DJ_MIXER_README.md
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
 jobs:
@@ -48,8 +49,9 @@ jobs:
             "https://x-access-token:${DEPLOY_TOKEN}@github.com/sudockin/dj-mixer.git" target
 
           cp index.html target/index.html
-          # Ship the release notes alongside the app (optional file)
+          # Ship the release notes + repo landing README alongside the app (optional files)
           cp -f RELEASE_NOTES.md target/RELEASE_NOTES.md 2>/dev/null || true
+          cp -f DJ_MIXER_README.md target/README.md 2>/dev/null || true
           # Keep Pages serving raw HTML (no Jekyll processing)
           touch target/.nojekyll
 
