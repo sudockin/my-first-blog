@@ -1336,6 +1336,118 @@
     .lib-actions .la-fav.on { color: var(--red); border-color: rgba(255,84,112,0.5); background: rgba(255,84,112,0.12); }
     .lib-actions .la-del:hover { color: var(--red); border-color: var(--red); }
 
+    /* ── Queue ── */
+    .btn-queue {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 10px;
+      cursor: pointer;
+      padding: 2px 8px;
+      color: var(--magenta);
+      background: rgba(255, 59, 213, 0.08);
+      border: 1px solid rgba(255, 59, 213, 0.4);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .btn-queue:hover { background: rgba(255, 59, 213, 0.16); }
+    .btn-queue .q-count {
+      min-width: 16px;
+      padding: 0 4px;
+      border-radius: 8px;
+      background: var(--magenta);
+      color: #0a0a12;
+      font-weight: 800;
+      font-size: 0.58rem;
+    }
+
+    .q-now { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+    .q-now-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      padding: 3px 0;
+    }
+    .q-now-tag {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+    }
+    .q-now-row.a .q-now-tag { color: var(--cyan); }
+    .q-now-row.b .q-now-tag { color: var(--magenta); }
+    .q-now-name {
+      overflow: hidden;
+      color: var(--text);
+      font-size: 0.8rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .q-toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .q-toolbar button {
+      flex: 1;
+      min-height: 34px;
+      cursor: pointer;
+      border-radius: 6px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .q-toolbar button.active { color: var(--green); border-color: var(--green); background: rgba(57,217,138,0.14); }
+    .q-toolbar button:hover { color: var(--text); }
+
+    .q-item {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 6px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.02);
+      margin-bottom: 4px;
+    }
+    .q-item.dragging { opacity: 0.45; }
+    .q-handle {
+      cursor: grab;
+      touch-action: none;
+      text-align: center;
+      color: var(--muted-2);
+      font-size: 1rem;
+      user-select: none;
+    }
+    .q-handle:active { cursor: grabbing; }
+    .q-num { color: var(--muted-2); font-family: var(--mono); font-size: 0.66rem; }
+    .q-info { min-width: 0; }
+    .q-title { overflow: hidden; color: var(--text); font-size: 0.8rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .q-artist { overflow: hidden; color: var(--muted); font-size: 0.7rem; text-overflow: ellipsis; white-space: nowrap; }
+    .q-actions { display: flex; gap: 3px; }
+    .q-actions button {
+      cursor: pointer;
+      min-width: 26px; height: 28px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      font-size: 0.66rem;
+      font-weight: 700;
+    }
+    .q-actions .qa-a:hover { color: var(--cyan); border-color: var(--cyan); }
+    .q-actions .qa-b:hover { color: var(--magenta); border-color: var(--magenta); }
+    .q-actions .qa-x:hover { color: var(--red); border-color: var(--red); }
+
     /* ── Drag & drop ── */
     .drop-overlay {
       position: absolute;
@@ -1474,7 +1586,7 @@
     <header class="masthead">
       <div class="masthead-kicker">Browser DJ console</div>
       <h1 class="title"><span class="title-mark" aria-hidden="true">MIX</span>DJ Mixer</h1>
-      <div class="masthead-status"><button class="btn-lib" id="lib-btn">📚 Library</button><button class="btn-keys" id="keys-btn">⌨ Keys</button><label class="debug-toggle"><input type="checkbox" id="debug-chk">Debug</label></div>
+      <div class="masthead-status"><button class="btn-lib" id="lib-btn">📚 Library</button><button class="btn-queue" id="queue-btn">📋 Queue<span class="q-count" id="q-count" style="display:none">0</span></button><button class="btn-keys" id="keys-btn">⌨ Keys</button><label class="debug-toggle"><input type="checkbox" id="debug-chk">Debug</label></div>
     </header>
 
     <div id="file-warning" class="system-warning">
@@ -1673,6 +1785,22 @@
     </div>
     <div class="lib-search"><input type="text" id="lib-search-input" placeholder="Search title, artist, source, BPM…" aria-label="Search library"></div>
     <div class="lib-body" id="lib-body"></div>
+  </aside>
+
+  <div class="lib-backdrop" id="queue-backdrop"></div>
+  <aside class="lib-drawer" id="queue-drawer" aria-label="Play queue">
+    <div class="lib-head">
+      <h2>📋 Up Next</h2>
+      <button class="lib-close" id="queue-close" title="Close">✕</button>
+    </div>
+    <div class="q-now" id="q-now"></div>
+    <div class="q-toolbar">
+      <button id="q-next-a" title="Load next track on Deck A">Next → A</button>
+      <button id="q-next-b" title="Load next track on Deck B">Next → B</button>
+      <button id="q-autoadv" title="Auto-load next when a deck finishes">Auto</button>
+      <button id="q-clear" title="Clear queue">Clear</button>
+    </div>
+    <div class="lib-body" id="queue-body"></div>
   </aside>
 
   <div class="shortcuts-panel" id="shortcuts-panel">
@@ -1944,6 +2072,7 @@
       }
 
       playBtn.textContent = (newState === 'playing') ? 'Pause' : 'Play';
+      updateNowPlaying();
     }
 
     // ── Timers ────────────────────────────────────────────────────────────
@@ -2043,6 +2172,7 @@
             break;
           case S.ENDED:
             setState(deck, 'ready');
+            if (autoAdvance) playNext(deck);
             break;
         }
       };
@@ -2148,7 +2278,7 @@
 
       ws.on('play',   function () { setState(deck, 'playing'); });
       ws.on('pause',  function () { if (states[deck] !== 'error') setState(deck, 'ready'); });
-      ws.on('finish', function () { setState(deck, 'ready'); });
+      ws.on('finish', function () { setState(deck, 'ready'); if (autoAdvance) playNext(deck); });
 
       // WaveSurfer must FETCH the audio to draw a waveform — that needs CORS.
       // Many audio hosts (incl. the demo tracks) don't send CORS headers, so
@@ -2191,7 +2321,7 @@
       });
       audio.addEventListener('playing', function () { setState(deck, 'playing'); });
       audio.addEventListener('pause',   function () { if (states[deck] !== 'error') setState(deck, 'ready'); });
-      audio.addEventListener('ended',   function () { setState(deck, 'ready'); });
+      audio.addEventListener('ended',   function () { setState(deck, 'ready'); if (autoAdvance) playNext(deck); });
       audio.addEventListener('error',   function () {
         clearLoadTimer(deck);
         var code = audio.error ? audio.error.code : '?';
@@ -3085,6 +3215,7 @@
         '<div class="lib-actions">' +
           '<button class="la-a" data-act="a" title="Load Deck A">A</button>' +
           '<button class="la-b" data-act="b" title="Load Deck B">B</button>' +
+          '<button class="la-q" data-act="q" title="Add to queue">＋</button>' +
           '<button class="la-fav' + (r.favorite ? ' on' : '') + '" data-act="fav" title="Favorite">♥</button>' +
           '<button class="la-del" data-act="del" title="Remove">🗑</button>' +
         '</div></div>';
@@ -3138,6 +3269,7 @@
         var act = btn.getAttribute('data-act');
         if (act === 'a') loadTrackToDeck('a', rec);
         else if (act === 'b') loadTrackToDeck('b', rec);
+        else if (act === 'q') addToQueue(rec);
         else if (act === 'fav') favoriteTrack(rec.id);
         else if (act === 'del') removeTrack(rec.id);
       });
@@ -3172,6 +3304,147 @@
       });
     }
 
+    // ── Play queue ──────────────────────────────────────────────────────────
+    var QUEUE_KEY = 'djmixer.queue.v1';
+    var queue = loadQueue();
+    var qseq = 0;
+    var autoAdvance = false;
+    var qdrag = null;
+
+    function loadQueue() {
+      try { var a = JSON.parse(localStorage.getItem(QUEUE_KEY)); return Array.isArray(a) ? a : []; }
+      catch (e) { return []; }
+    }
+    function saveQueue() { try { localStorage.setItem(QUEUE_KEY, JSON.stringify(queue.slice(0, 200))); } catch (e) {} }
+
+    function addToQueue(rec) {
+      queue.push({ qid: 'q' + (++qseq), id: rec.id, source: rec.source, key: rec.key,
+                   title: rec.title, artist: rec.artist, thumb: rec.thumb || null });
+      saveQueue(); renderQueue(); updateQueueCount();
+    }
+    function removeFromQueue(qid) { queue = queue.filter(function (q) { return q.qid !== qid; }); saveQueue(); renderQueue(); updateQueueCount(); }
+    function moveQueue(qid, dir) {
+      var i = queue.findIndex(function (q) { return q.qid === qid; });
+      if (i < 0) return;
+      var j = i + dir; if (j < 0 || j >= queue.length) return;
+      var t = queue[i]; queue[i] = queue[j]; queue[j] = t;
+      saveQueue(); renderQueue();
+    }
+    function clearQueue() { queue = []; saveQueue(); renderQueue(); updateQueueCount(); }
+
+    function loadQueueEntry(deck, q, removeAfter) {
+      ensureAudioContextResumed();
+      if (q.source === 'youtube') loadYouTubeWhenReady(deck, q.key);
+      else loadAudio(deck, q.key, (q.artist ? q.artist + ' - ' : '') + q.title);
+      if (removeAfter) removeFromQueue(q.qid); else renderQueue();
+    }
+    function playNext(deck) {
+      if (!queue.length) return false;
+      var q = queue.shift(); saveQueue();
+      loadQueueEntry(deck, q, false);
+      updateQueueCount();
+      return true;
+    }
+    function updateQueueCount() {
+      var c = el('q-count'); if (!c) return;
+      c.textContent = queue.length;
+      c.style.display = queue.length ? '' : 'none';
+    }
+    function nowPlayingName(deck) {
+      if (deckType[deck] === 'youtube') return vidIds[deck] ? ('YouTube ' + vidIds[deck]) : '—';
+      var e = el('track-name-' + deck);
+      return (e && e.textContent) || '—';
+    }
+    function updateNowPlaying() {
+      var now = el('q-now'); if (!now) return;
+      now.innerHTML =
+        '<div class="q-now-row a"><span class="q-now-tag">A ▸</span><span class="q-now-name">' + esc(nowPlayingName('a')) + '</span></div>' +
+        '<div class="q-now-row b"><span class="q-now-tag">B ▸</span><span class="q-now-name">' + esc(nowPlayingName('b')) + '</span></div>';
+    }
+    function renderQueue() {
+      updateNowPlaying();
+      var body = el('queue-body'); if (!body) return;
+      if (!queue.length) { body.innerHTML = '<div class="lib-empty">Queue is empty.<br>Add tracks from the Library with ＋.</div>'; return; }
+      body.innerHTML = queue.map(function (q, i) {
+        return '<div class="q-item" data-qid="' + esc(q.qid) + '">' +
+          '<div class="q-handle" title="Drag to reorder">⠿</div>' +
+          '<div class="q-info"><div class="q-title"><span class="q-num">' + (i + 1) + '.</span> ' + esc(q.title) + '</div>' +
+          '<div class="q-artist">' + esc(q.artist || q.source) + '</div></div>' +
+          '<div class="q-actions">' +
+            '<button class="qa-up" data-qact="up" title="Move up">▲</button>' +
+            '<button class="qa-dn" data-qact="dn" title="Move down">▼</button>' +
+            '<button class="qa-a" data-qact="a" title="Load Deck A">A</button>' +
+            '<button class="qa-b" data-qact="b" title="Load Deck B">B</button>' +
+            '<button class="qa-x" data-qact="x" title="Remove">✕</button>' +
+          '</div></div>';
+      }).join('');
+    }
+
+    function openQueue() { closeLibrary(); renderQueue(); el('queue-drawer').classList.add('open'); el('queue-backdrop').classList.add('open'); }
+    function closeQueue() { el('queue-drawer').classList.remove('open'); el('queue-backdrop').classList.remove('open'); }
+
+    function wireQueue() {
+      el('queue-btn').addEventListener('click', openQueue);
+      el('queue-close').addEventListener('click', closeQueue);
+      el('queue-backdrop').addEventListener('click', closeQueue);
+      el('q-next-a').addEventListener('click', function () { playNext('a'); });
+      el('q-next-b').addEventListener('click', function () { playNext('b'); });
+      el('q-clear').addEventListener('click', clearQueue);
+      el('q-autoadv').addEventListener('click', function () { autoAdvance = !autoAdvance; this.classList.toggle('active', autoAdvance); });
+
+      var body = el('queue-body');
+      body.addEventListener('click', function (e) {
+        var btn = e.target.closest && e.target.closest('button[data-qact]');
+        var item = e.target.closest && e.target.closest('.q-item');
+        if (!btn || !item) return;
+        var qid = item.getAttribute('data-qid');
+        var q = null; for (var i = 0; i < queue.length; i++) if (queue[i].qid === qid) { q = queue[i]; break; }
+        if (!q) return;
+        var act = btn.getAttribute('data-qact');
+        if (act === 'up') moveQueue(qid, -1);
+        else if (act === 'dn') moveQueue(qid, 1);
+        else if (act === 'a') loadQueueEntry('a', q, true);
+        else if (act === 'b') loadQueueEntry('b', q, true);
+        else if (act === 'x') removeFromQueue(qid);
+      });
+
+      // Pointer-drag reorder (works with mouse and touch)
+      body.addEventListener('pointerdown', function (e) {
+        var handle = e.target.closest && e.target.closest('.q-handle');
+        if (!handle) return;
+        var item = handle.closest('.q-item'); if (!item) return;
+        e.preventDefault();
+        qdrag = { qid: item.getAttribute('data-qid'), over: null };
+        item.classList.add('dragging');
+      });
+      body.addEventListener('pointermove', function (e) {
+        if (!qdrag) return;
+        var items = [].slice.call(body.querySelectorAll('.q-item'));
+        qdrag.over = '__end__';
+        for (var i = 0; i < items.length; i++) {
+          var r = items[i].getBoundingClientRect();
+          if (e.clientY < r.top + r.height / 2) { qdrag.over = items[i].getAttribute('data-qid'); break; }
+        }
+      });
+      var endDrag = function () {
+        if (!qdrag) return;
+        var from = queue.findIndex(function (q) { return q.qid === qdrag.qid; });
+        if (from >= 0 && qdrag.over && qdrag.over !== qdrag.qid) {
+          var moved = queue.splice(from, 1)[0];
+          var to = qdrag.over === '__end__' ? queue.length : queue.findIndex(function (q) { return q.qid === qdrag.over; });
+          if (to < 0) to = queue.length;
+          queue.splice(to, 0, moved);
+          saveQueue();
+        }
+        qdrag = null; renderQueue();
+      };
+      document.addEventListener('pointerup', endDrag);
+      document.addEventListener('pointercancel', endDrag);
+
+      updateQueueCount();
+      renderQueue();
+    }
+
     // ── Orientation (mobile) ────────────────────────────────────────────────
     function updateOrientation() {
       var portrait = window.matchMedia('(max-width: 932px) and (orientation: portrait)').matches;
@@ -3194,6 +3467,7 @@
     wireMixControls();
     wireLibrary();
     wireDragDrop();
+    wireQueue();
     startTimingLoop();
 
     // Resume audio on the very first user gesture (iOS autoplay policy)
