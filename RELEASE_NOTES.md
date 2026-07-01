@@ -41,3 +41,7 @@ A dedicated landscape layout keeps both decks and the crossfader on screen, with
 Queue & auto-advance · Collections/crates · 3-band EQ + VU meters · session save/load · smart BPM/key crates · and a mix-history timeline so you can replay your own sets.
 
 *Built for the browser. Made to mix.* 🎶
+
+---
+
+<sub>v1.0.0 · runs 100% client-side · no account required</sub>
