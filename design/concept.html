@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJ Mixer — Design Concept (review only)</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    /* Refined palette — same neon DNA, deeper & more considered */
+    --cyan:#33e6ff; --cyan-soft:rgba(51,230,255,.14);
+    --magenta:#ff44d4; --magenta-soft:rgba(255,68,212,.14);
+    --green:#3ee08f; --amber:#ffc24d; --red:#ff5d78;
+    --ink-0:#04060b; --ink-1:#0a0e17; --ink-2:#111624; --ink-3:#18203200;
+    --panel:#0f1420; --panel-2:#141b2b;
+    --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.18);
+    --text:#f4f7ff; --muted:#8a94ac; --muted-2:#5c657d;
+    --radius:12px; --radius-sm:8px;
+    --shadow:0 30px 90px rgba(0,0,0,.5);
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  html{background:#05070d}
+  body{
+    font-family:var(--sans); color:var(--text); line-height:1.5; min-height:100vh;
+    background:
+      radial-gradient(1200px 700px at 12% -10%, rgba(51,230,255,.10), transparent 60%),
+      radial-gradient(1100px 700px at 100% 0%, rgba(255,68,212,.10), transparent 55%),
+      linear-gradient(180deg,#0a0e17,#05070d 60%,#05070d);
+    padding:0 0 80px;
+  }
+  .wrap{width:min(1180px,92vw);margin:0 auto}
+
+  /* Review banner */
+  .review-flag{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    padding:9px 16px;text-align:center;
+    background:rgba(255,194,77,.12);border-bottom:1px solid rgba(255,194,77,.4);
+    color:#ffd99a;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  }
+
+  /* Hero / brand */
+  header.hero{padding:64px 0 34px}
+  .brandline{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+  .logo{
+    width:56px;height:56px;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;
+    background:linear-gradient(135deg,var(--cyan-soft),var(--magenta-soft)),var(--panel);
+    border:1px solid var(--line-strong);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 40px rgba(51,230,255,.2);
+  }
+  .logo svg{width:34px;height:34px}
+  .brand-names{display:flex;flex-direction:column}
+  .kicker{font-family:var(--mono);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .wordmark{font-size:clamp(2.2rem,6vw,3.6rem);font-weight:850;letter-spacing:-.02em;line-height:1}
+  .wordmark b{background:linear-gradient(90deg,var(--cyan),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{max-width:640px;margin-top:6px;color:var(--muted);font-size:1.05rem}
+  .name-alts{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .name-alts span{padding:5px 12px;border:1px solid var(--line);border-radius:999px;font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+  .name-alts span.pick{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft)}
+
+  section{padding:34px 0;border-top:1px solid var(--line)}
+  h2{font-size:.8rem;font-family:var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+  h2 span{color:var(--text)}
+  .grid{display:grid;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+  .card h3{font-size:.72rem;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+
+  /* Foundations: color */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+  .sw{border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--line)}
+  .sw .chip{height:64px}
+  .sw .meta{padding:8px 10px;background:var(--ink-2)}
+  .sw .meta b{display:block;font-size:.8rem}
+  .sw .meta code{font-family:var(--mono);font-size:.66rem;color:var(--muted)}
+
+  /* Type scale */
+  .type-row{display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .type-row .lbl{width:120px;font-family:var(--mono);font-size:.66rem;color:var(--muted);flex:none}
+
+  /* Component demo surfaces */
+  .demo{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .btn{cursor:default;min-height:44px;padding:0 18px;border-radius:var(--radius-sm);font-weight:750;font-size:.9rem;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:var(--text);display:inline-flex;align-items:center;gap:8px}
+  .btn.primary-a{border-color:rgba(51,230,255,.6);background:linear-gradient(180deg,rgba(51,230,255,.14),transparent),rgba(255,255,255,.03);box-shadow:0 0 22px rgba(51,230,255,.18)}
+  .btn.primary-b{border-color:rgba(255,68,212,.6);background:linear-gradient(180deg,rgba(255,68,212,.14),transparent),rgba(255,255,255,.03);box-shadow:0 0 22px rgba(255,68,212,.18)}
+  .btn.sync{border-color:var(--green);color:var(--green);background:rgba(62,224,143,.12)}
+  .btn.cue{border-color:rgba(255,194,77,.5);color:var(--amber);background:rgba(255,194,77,.1)}
+  .btn.ghost{background:transparent;color:var(--muted)}
+  .btn.sm{min-height:36px;padding:0 12px;font-size:.8rem}
+  .chiprow{display:flex;gap:6px;flex-wrap:wrap}
+  .pill{padding:4px 10px;border-radius:999px;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);color:var(--muted)}
+  .pill.ready{color:var(--green);border-color:rgba(62,224,143,.35);background:rgba(62,224,143,.1)}
+  .pill.play{color:#9dffcb;border-color:rgba(62,224,143,.4);background:rgba(62,224,143,.16)}
+  .pill.load{color:var(--amber);border-color:rgba(255,194,77,.3);background:rgba(255,194,77,.1)}
+  .pill.err{color:var(--red);border-color:rgba(255,93,120,.3);background:rgba(255,93,120,.12)}
+
+  /* range */
+  input[type=range]{-webkit-appearance:none;appearance:none;height:8px;width:200px;border-radius:999px;background:linear-gradient(90deg,rgba(255,255,255,.16),rgba(255,255,255,.06));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--cyan);border:3px solid #0f1420;box-shadow:0 0 16px rgba(51,230,255,.6)}
+  .xf{width:260px;height:12px;background:linear-gradient(90deg,rgba(51,230,255,.6),rgba(255,194,77,.2)50%,rgba(255,68,212,.6));border:1px solid var(--line)}
+  .xf::-webkit-slider-thumb{width:28px;height:28px;border-radius:7px;background:#f6f7ff;box-shadow:0 0 22px rgba(255,255,255,.5)}
+
+  /* waveform mock */
+  .wave{position:relative;height:96px;border-radius:var(--radius-sm);overflow:hidden;background:linear-gradient(135deg,rgba(51,230,255,.12),rgba(255,68,212,.08)),#070b14;border:1px solid var(--line)}
+  .wave .bars{position:absolute;inset:0;display:flex;align-items:center;gap:2px;padding:0 8px}
+  .wave .bars i{flex:1;background:rgba(51,230,255,.5);border-radius:2px;display:block}
+  .wave .grid{position:absolute;inset:0}
+  .wave .grid b{position:absolute;top:8%;bottom:8%;width:1px;background:rgba(255,255,255,.14)}
+  .wave .grid b.down{background:rgba(255,255,255,.4);width:2px}
+  .wave .cue{position:absolute;top:0;bottom:0;width:2px;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+  .wave .loop{position:absolute;top:0;bottom:0;background:rgba(62,224,143,.16);border-left:1px solid var(--green);border-right:1px solid var(--green)}
+
+  /* library/queue item */
+  .li{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:8px;border-radius:var(--radius-sm)}
+  .li:hover{background:rgba(255,255,255,.04)}
+  .li .th{width:44px;height:44px;border-radius:7px;display:grid;place-items:center;background:linear-gradient(135deg,var(--cyan-soft),var(--magenta-soft));border:1px solid var(--line);font-size:1.1rem}
+  .li .tt{font-weight:650;font-size:.86rem}
+  .li .ta{color:var(--muted);font-size:.74rem}
+  .li .tm{color:var(--muted-2);font-family:var(--mono);font-size:.6rem}
+  .li .ax{display:flex;gap:4px}
+  .li .ax b{width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--line);border-radius:6px;color:var(--muted);font-weight:700;font-size:.72rem}
+
+  /* HERO console mock */
+  .console{display:grid;grid-template-columns:1fr 150px 1fr;gap:18px;align-items:start}
+  .deck{position:relative;padding:18px;border-radius:var(--radius);background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 38%),var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;overflow:hidden}
+  .deck::before{content:"";position:absolute;inset:0 0 auto;height:3px}
+  .deck.a::before{background:linear-gradient(90deg,var(--cyan),transparent 70%)}
+  .deck.b::before{background:linear-gradient(90deg,var(--magenta),transparent 70%)}
+  .dh{display:flex;align-items:center;justify-content:space-between}
+  .dh .dl{font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+  .deck.a .dl{color:var(--cyan)} .deck.b .dl{color:var(--magenta)}
+  .row{display:flex;gap:8px}
+  .bpm{min-width:82px;padding:6px 12px;border-radius:var(--radius-sm);background:rgba(0,0,0,.24);border:1px solid var(--line);text-align:center}
+  .bpm .k{font-family:var(--mono);font-size:.56rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+  .bpm .v{font-family:var(--mono);font-size:1.2rem;font-weight:800}
+  .deck.a .bpm .v{color:var(--cyan)} .deck.b .bpm .v{color:var(--magenta)}
+  .xfsec{border-radius:var(--radius);background:rgba(255,255,255,.03);border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;justify-content:center;min-height:220px}
+  .phase{width:100%}
+  .phase .track{position:relative;height:10px;border-radius:999px;background:rgba(0,0,0,.3);border:1px solid var(--line)}
+  .phase .track::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.25)}
+  .phase .n{position:absolute;top:-2px;bottom:-2px;left:52%;width:4px;margin-left:-2px;border-radius:2px;background:var(--green);box-shadow:0 0 8px rgba(62,224,143,.7)}
+  .cap{font-family:var(--mono);font-size:.54rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:center}
+  .footnote{color:var(--muted-2);font-size:.85rem;margin-top:18px}
+  @media(max-width:820px){.console{grid-template-columns:1fr}.wordmark{font-size:2.4rem}}
+</style>
+</head>
+<body>
+  <div class="review-flag">⚠ Design concept — for review only · not applied to the live app</div>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="brandline">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <defs><linearGradient id="g" x1="0" y1="0" x2="32" y2="32">
+              <stop offset="0" stop-color="#33e6ff"/><stop offset="1" stop-color="#ff44d4"/></linearGradient></defs>
+            <circle cx="9" cy="16" r="5.5" stroke="url(#g)" stroke-width="2"/>
+            <circle cx="23" cy="16" r="5.5" stroke="url(#g)" stroke-width="2"/>
+            <path d="M14.5 16h3" stroke="url(#g)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="9" cy="16" r="1.4" fill="#33e6ff"/><circle cx="23" cy="16" r="1.4" fill="#ff44d4"/>
+          </svg>
+        </div>
+        <div class="brand-names">
+          <span class="kicker">Browser DJ console — design concept</span>
+          <div class="wordmark">PHASE<b>·</b>DJ</div>
+        </div>
+      </div>
+      <p class="lede">A refined take on the mixer's identity: same electric neon DNA, but with a considered palette, clearer hierarchy, and a proper brand mark built from two decks locked in phase. Nothing here is live — it's a proposal to react to.</p>
+      <div class="name-alts">
+        <span class="pick">PHASE (recommended — nods to phase-lock sync)</span>
+        <span>CROSSFADE</span><span>NEONDECK</span><span>RIPTIDE</span><span>BEATLOCK</span>
+      </div>
+    </header>
+
+    <section>
+      <h2><span>01</span> &nbsp;Foundations — Color</h2>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#33e6ff"></div><div class="meta"><b>Cyan / Deck A</b><code>#33e6ff</code></div></div>
+        <div class="sw"><div class="chip" style="background:#ff44d4"></div><div class="meta"><b>Magenta / Deck B</b><code>#ff44d4</code></div></div>
+        <div class="sw"><div class="chip" style="background:#3ee08f"></div><div class="meta"><b>Green / Synced</b><code>#3ee08f</code></div></div>
+        <div class="sw"><div class="chip" style="background:#ffc24d"></div><div class="meta"><b>Amber / Cue</b><code>#ffc24d</code></div></div>
+        <div class="sw"><div class="chip" style="background:#ff5d78"></div><div class="meta"><b>Red / Error</b><code>#ff5d78</code></div></div>
+        <div class="sw"><div class="chip" style="background:#0f1420"></div><div class="meta"><b>Panel</b><code>#0f1420</code></div></div>
+        <div class="sw"><div class="chip" style="background:#05070d"></div><div class="meta"><b>Ink base</b><code>#05070d</code></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span>02</span> &nbsp;Foundations — Type</h2>
+      <div class="card">
+        <div class="type-row"><span class="lbl">Display / 850</span><span style="font-size:2rem;font-weight:850;letter-spacing:-.02em">Drop the needle</span></div>
+        <div class="type-row"><span class="lbl">Heading / 750</span><span style="font-size:1.25rem;font-weight:750">Deck A — ready to mix</span></div>
+        <div class="type-row"><span class="lbl">Body / 450</span><span>Load a track, hit sync, and ride the crossfader.</span></div>
+        <div class="type-row"><span class="lbl">Mono / data</span><span style="font-family:var(--mono)">BPM 124.0 · +2.4% · phase −3ms · SYNCED</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span>03</span> &nbsp;Components</h2>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+        <div class="card"><h3>Buttons</h3><div class="demo">
+          <span class="btn primary-a">▶ Play</span><span class="btn primary-b">▶ Play</span>
+          <span class="btn sync">Sync</span><span class="btn cue">Cue</span><span class="btn ghost sm">Load</span>
+        </div></div>
+        <div class="card"><h3>State badges</h3><div class="demo chiprow">
+          <span class="pill">idle</span><span class="pill load">loading</span><span class="pill ready">ready</span><span class="pill play">playing</span><span class="pill err">error</span>
+        </div></div>
+        <div class="card"><h3>Faders</h3><div class="demo" style="flex-direction:column;align-items:flex-start;gap:14px">
+          <input type="range" value="70"><input type="range" class="xf" value="52">
+        </div></div>
+        <div class="card"><h3>BPM & phase</h3><div class="demo">
+          <div class="bpm"><div class="k">BPM</div><div class="v" style="color:var(--cyan)">124.0</div></div>
+          <div class="phase" style="max-width:150px"><div class="cap">Phase / Drift</div><div class="track"><div class="n"></div></div></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span>04</span> &nbsp;Waveform · beat grid · cue · loop</h2>
+      <div class="card"><div class="wave">
+        <div class="bars" id="bars"></div>
+        <div class="loop" style="left:34%;width:16%"></div>
+        <div class="grid" id="grid"></div>
+        <div class="cue" style="left:22%"></div>
+      </div></div>
+    </section>
+
+    <section>
+      <h2><span>05</span> &nbsp;Library & Queue items</h2>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+        <div class="card"><h3>Library row</h3>
+          <div class="li"><div class="th">▶</div><div><div class="tt">Around the World</div><div class="ta">Daft Punk</div><div class="tm">7:07 · 121 BPM · youtube</div></div>
+            <div class="ax"><b>A</b><b>B</b><b>＋</b><b style="color:var(--red)">♥</b></div></div>
+        </div>
+        <div class="card"><h3>Queue row</h3>
+          <div class="li" style="grid-template-columns:24px 1fr auto"><div style="text-align:center;color:var(--muted-2)">⠿</div>
+            <div><div class="tt">1. Glue</div><div class="ta">Bicep</div></div>
+            <div class="ax"><b>▲</b><b>▼</b><b>A</b><b>✕</b></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span>06</span> &nbsp;The console — refined hero</h2>
+      <div class="console">
+        <div class="deck a">
+          <div class="dh"><span class="dl">Deck A</span><span class="pill play">playing</span></div>
+          <div class="wave" style="height:84px"><div class="bars" data-bars></div><div class="cue" style="left:20%"></div></div>
+          <div class="row"><div class="bpm"><div class="k">BPM</div><div class="v">124.0</div></div><span class="btn sync sm">Master</span><span class="btn cue sm">Cue</span></div>
+          <span class="btn primary-a" style="justify-content:center">⏸ Pause</span>
+          <input type="range" value="82">
+        </div>
+        <div class="xfsec">
+          <div class="phase"><div class="cap">Phase / Drift</div><div class="track"><div class="n"></div></div><div class="cap" style="margin-top:6px;color:var(--green)">−3 ms · SYNCED</div></div>
+          <div class="cap">A &nbsp;— crossfader —&nbsp; B</div>
+          <input type="range" class="xf" value="48">
+        </div>
+        <div class="deck b">
+          <div class="dh"><span class="dl">Deck B</span><span class="pill ready">synced</span></div>
+          <div class="wave" style="height:84px"><div class="bars" data-bars></div><div class="loop" style="left:30%;width:20%"></div></div>
+          <div class="row"><div class="bpm"><div class="k">BPM</div><div class="v">124.0</div></div><span class="btn sync sm">Synced</span><span class="btn cue sm">Cue</span></div>
+          <span class="btn primary-b" style="justify-content:center">▶ Play</span>
+          <input type="range" value="76">
+        </div>
+      </div>
+      <p class="footnote">Same layout you have today — this concept only changes the <b>skin</b> (palette depth, brand mark, spacing, component polish), so porting it is low-risk and won't disturb the beatmatching/library/queue logic.</p>
+    </section>
+  </div>
+
+<script>
+  // decorative only — random-ish bar heights (deterministic, no Math.random needed for a mock)
+  function fillBars(host, seed){
+    var h='';for(var i=0;i<64;i++){var v=30+((i*seed+i*i)%60);h+='<i style="height:'+v+'%"></i>';}host.innerHTML=h;
+  }
+  fillBars(document.getElementById('bars'),7);
+  document.querySelectorAll('[data-bars]').forEach(function(b,i){fillBars(b,3+i*4);});
+  var g='';for(var k=0;k<40;k++){g+='<b class="'+(k%4===0?'down':'')+'" style="left:'+(k*2.5)+'%"></b>';}
+  document.getElementById('grid').innerHTML=g;
+</script>
+</body>
+</html>
