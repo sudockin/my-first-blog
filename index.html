@@ -1659,6 +1659,33 @@ body {
   .btn-quant-global { min-height: 28px; font-size: 0.5rem; }
 }
 
+    /* ── Discover → deck buttons + API-key row (added post-facelift) ── */
+    .dsc-ax { display: flex; gap: 4px; align-items: center; }
+    .dsc-deck {
+      cursor: pointer; min-width: 28px; height: 30px; padding: 0 8px;
+      border-radius: 6px; font-family: var(--mono, monospace); font-weight: 700; font-size: 0.72rem;
+      color: #f2f0ea; background: linear-gradient(180deg, var(--key-2, #3a3936), var(--key, #292927));
+      border: 1px solid #191917; box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+    }
+    .dsc-deck:hover { filter: brightness(1.1); }
+    .dsc-deck:active { transform: translateY(1px); }
+    .dsc-rel-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+    .dsc-rel-actions .dsc-deck { height: 34px; padding: 0 14px; }
+    .dsc-hint { padding: 6px 14px; min-height: 1.1em; color: var(--muted, #6e6a60); font-size: 0.72rem; line-height: 1.5; }
+    .dsc-key {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+      padding: 10px 14px 14px; border-top: 1px solid var(--line, rgba(0,0,0,.12));
+    }
+    .dsc-key input {
+      min-height: 36px; padding: 0 10px; border-radius: 6px;
+      border: 1px solid var(--line-strong, #aaa79c); background: var(--screen, #16181b);
+      color: #e8e6df; font: 500 0.78rem var(--sans, sans-serif); outline: none;
+    }
+    .dsc-key button {
+      cursor: pointer; padding: 0 14px; min-height: 36px; border-radius: 6px;
+      color: #f2f0ea; background: linear-gradient(180deg, var(--key-2, #3a3936), var(--key, #292927));
+      border: 1px solid #191917; font-family: var(--mono, monospace); font-weight: 700; font-size: 0.72rem;
+    }
   </style>
 </head>
 <body>
@@ -1768,6 +1795,7 @@ body {
         <button data-curve="cut">Cut</button>
       </div>
       <button class="btn-quant-global" id="quant-global">Quantize: Off</button>
+      <button class="btn-quant-global" id="autosync-toggle">Auto-sync: Off</button>
     </div>
 
     <!-- ── Deck B ── -->
@@ -1895,6 +1923,11 @@ body {
       <button id="dsc-go">Go</button>
     </div>
     <div class="lib-body" id="discover-body"></div>
+    <div class="dsc-hint" id="discover-hint"></div>
+    <div class="dsc-key">
+      <input type="password" id="dsc-key-input" placeholder="YouTube API key — optional, enables 1-click load" autocomplete="off" aria-label="YouTube API key">
+      <button id="dsc-key-save">Save</button>
+    </div>
   </aside>
 
   <div class="shortcuts-panel" id="shortcuts-panel">
@@ -1989,6 +2022,7 @@ body {
     var loops    = { a: newLoop(), b: newLoop() };
     var quantize = false;                       // snap cue/loop to nearest beat
     var cfCurve  = 'smooth';                     // 'smooth' | 'linear' | 'cut'
+    var autoSyncOnPlay = false;                  // auto-lock a deck to the other when it starts playing
     var recordedIds = { a: null, b: null };     // library record id of each deck's current track
     var loadSeq     = { a: 0, b: 0 };           // load token — a stale async load must not clobber a newer one
 
@@ -2167,6 +2201,22 @@ body {
 
       playBtn.textContent = (newState === 'playing') ? 'Pause' : 'Play';
       updateNowPlaying();
+
+      // Auto-sync: when a deck starts playing and the other is already playing,
+      // lock the new deck to it (tempo + phase). Deferred to dodge re-entrancy.
+      if (newState === 'playing' && autoSyncOnPlay) {
+        (function (d) {
+          setTimeout(function () {
+            var o = other(d);
+            if (deckType[d] === 'audio' && timing[d].normBpm &&
+                deckType[o] === 'audio' && timing[o].normBpm &&
+                states[d] === 'playing' && states[o] === 'playing' &&
+                !timing[d].follower && !timing[d].master && !timing[o].follower) {
+              syncDeck(d);
+            }
+          }, 60);
+        })(deck);
+      }
     }
 
     // ── Timers ────────────────────────────────────────────────────────────
@@ -3064,6 +3114,11 @@ body {
         b.addEventListener('click', function () { setCfCurve(b.getAttribute('data-curve')); });
       });
       el('quant-global').addEventListener('click', function () { setQuantize(!quantize); });
+      el('autosync-toggle').addEventListener('click', function () {
+        autoSyncOnPlay = !autoSyncOnPlay;
+        this.classList.toggle('active', autoSyncOnPlay);
+        this.textContent = 'Auto-sync: ' + (autoSyncOnPlay ? 'On' : 'Off');
+      });
       el('keys-btn').addEventListener('click', function () { el('shortcuts-panel').classList.add('open'); });
       el('shortcuts-close').addEventListener('click', function () { el('shortcuts-panel').classList.remove('open'); });
       el('shortcuts-panel').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('open'); });
@@ -3563,22 +3618,28 @@ body {
       var cover = rel.cover_image || rel.thumb || '';
       var meta = [rel.year, (rel.genre && rel.genre.join(', ')), (rel.style && rel.style.join(', '))].filter(Boolean);
       var label = (rel.label && rel.label[0]) || '';
-      return '<div class="dsc-release">' +
+      return '<div class="dsc-release" data-title="' + esc(rel.title) + '">' +
         (cover ? '<img class="dsc-cover" src="' + esc(cover) + '" alt="" onerror="this.outerHTML=\'<div class=&quot;dsc-cover&quot;>💿</div>\'">' : '<div class="dsc-cover">💿</div>') +
         '<div class="dsc-rel-info"><div class="dsc-rel-title">' + esc(rel.title) + '</div>' +
         '<div class="dsc-rel-meta">' + esc(meta.join(' · ')) + '</div>' +
         (label ? '<div class="dsc-rel-meta">' + esc(label) + '</div>' : '') +
-        '<a class="dsc-yt" href="' + ytSearch(rel.title) + '" target="_blank" rel="noopener">▶ Find on YouTube ↗</a>' +
-        '</div></div>';
+        '<div class="dsc-rel-actions">' +
+          '<button class="dsc-deck" data-dact="a" title="Load onto Deck A">→ Deck A</button>' +
+          '<button class="dsc-deck" data-dact="b" title="Load onto Deck B">→ Deck B</button>' +
+          '<a class="dsc-yt" href="' + ytSearch(rel.title) + '" target="_blank" rel="noopener">▶ YouTube ↗</a>' +
+        '</div></div></div>';
     }
     function discCard(rel) {
       var thumb = rel.thumb || rel.cover_image || '';
-      return '<div class="dsc-item">' +
+      return '<div class="dsc-item" data-title="' + esc(rel.title) + '">' +
         (thumb ? '<img class="dsc-thumb" src="' + esc(thumb) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<div class="dsc-thumb">💿</div>') +
         '<div class="dsc-info"><div class="dsc-t">' + esc(rel.title) + '</div>' +
         '<div class="dsc-m">' + esc([rel.year, (rel.style && rel.style[0]) || (rel.genre && rel.genre[0]) || ''].filter(Boolean).join(' · ')) + '</div></div>' +
-        '<a class="dsc-yt-sm" href="' + ytSearch(rel.title) + '" target="_blank" rel="noopener" title="Find on YouTube">▶</a>' +
-        '</div>';
+        '<div class="dsc-ax">' +
+          '<button class="dsc-deck" data-dact="a" title="Load onto Deck A">A</button>' +
+          '<button class="dsc-deck" data-dact="b" title="Load onto Deck B">B</button>' +
+          '<a class="dsc-yt-sm" href="' + ytSearch(rel.title) + '" target="_blank" rel="noopener" title="Find on YouTube">▶</a>' +
+        '</div></div>';
     }
     function discSection(title, items) {
       if (!items.length) return '';
@@ -3602,7 +3663,7 @@ body {
           var html = releaseHTML(rel);
           html += discSection('More ' + style, byStyle.slice(0, 10));
           html += discSection('More by ' + (artist || 'this artist'), byArtist.slice(0, 8));
-          html += '<div class="dsc-note">Discogs releases have no audio — tap ▶ to find one on YouTube, then paste it onto a deck.</div>';
+          html += '<div class="dsc-note">Tap <b>→ Deck</b> to load a pick (opens a YouTube search — or 1-click if you add an API key below), or ▶ to just find it on YouTube.</div>';
           body.innerHTML = html;
         });
       }).catch(function (e) {
@@ -3626,6 +3687,30 @@ body {
     }
     function closeDiscover() { el('discover-drawer').classList.remove('open'); el('discover-backdrop').classList.remove('open'); }
 
+    // Assign a discovery pick to a deck. With a saved YouTube API key we resolve
+    // the top video and load it in one click; otherwise we open a YouTube search.
+    function ytApiKey() { try { return localStorage.getItem('djmixer.ytkey') || ''; } catch (e) { return ''; } }
+    function dscHint(msg) { var h = el('discover-hint'); if (h) h.textContent = msg || ''; }
+    function assignFromDiscover(deck, title) {
+      ensureAudioContextResumed();
+      var q = String(title).replace(/\s*\(\d+\)\s*$/, '');
+      var key = ytApiKey();
+      if (key) {
+        dscHint('Finding “' + q + '” on YouTube…');
+        fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=1&q=' + encodeURIComponent(q) + '&key=' + encodeURIComponent(key))
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            var id = j && j.items && j.items[0] && j.items[0].id && j.items[0].id.videoId;
+            if (id) { loadYouTubeWhenReady(deck, id); dscHint(''); closeDiscover(); }
+            else { dscHint('No embeddable YouTube match — opening search…'); window.open(ytSearch(q), '_blank', 'noopener'); }
+          })
+          .catch(function () { dscHint('YouTube API error — opening search instead…'); window.open(ytSearch(q), '_blank', 'noopener'); });
+      } else {
+        window.open(ytSearch(q), '_blank', 'noopener');
+        dscHint('Opened a YouTube search for “' + q + '”. Copy the link into Deck ' + deck.toUpperCase() + ' — or add a YouTube API key below for 1-click loading.');
+      }
+    }
+
     function wireDiscover() {
       el('discover-btn').addEventListener('click', function () { var s = discoverSeedFromDeck(); openDiscover(s && s.artist, s && s.title); });
       el('discover-close').addEventListener('click', closeDiscover);
@@ -3635,6 +3720,20 @@ body {
         var ta = parseTitleArtist(v); runDiscover(ta.artist, ta.title || v);
       });
       el('dsc-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') el('dsc-go').click(); });
+      el('discover-body').addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('button[data-dact]');
+        if (!b) return;
+        var item = e.target.closest('.dsc-item, .dsc-release');
+        var title = item && item.getAttribute('data-title');
+        if (title) assignFromDiscover(b.getAttribute('data-dact'), title);
+      });
+      var saved = ytApiKey();
+      if (saved) el('dsc-key-input').value = saved;
+      el('dsc-key-save').addEventListener('click', function () {
+        var v = el('dsc-key-input').value.trim();
+        try { localStorage.setItem('djmixer.ytkey', v); } catch (e) {}
+        dscHint(v ? 'Saved — “→ Deck” now loads in one click.' : 'Key cleared — “→ Deck” opens a YouTube search.');
+      });
     }
 
     // ── Orientation (mobile) ────────────────────────────────────────────────
