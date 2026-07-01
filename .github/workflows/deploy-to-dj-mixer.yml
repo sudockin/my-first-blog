@@ -20,6 +20,7 @@ on:
     paths:
       - index.html
       - .nojekyll
+      - RELEASE_NOTES.md
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
 jobs:
@@ -47,6 +48,8 @@ jobs:
             "https://x-access-token:${DEPLOY_TOKEN}@github.com/sudockin/dj-mixer.git" target
 
           cp index.html target/index.html
+          # Ship the release notes alongside the app (optional file)
+          cp -f RELEASE_NOTES.md target/RELEASE_NOTES.md 2>/dev/null || true
           # Keep Pages serving raw HTML (no Jekyll processing)
           touch target/.nojekyll
 
@@ -56,7 +59,7 @@ jobs:
             exit 0
           fi
 
-          git add index.html .nojekyll
+          git add index.html .nojekyll RELEASE_NOTES.md 2>/dev/null || git add index.html .nojekyll
           git commit -m "Sync DJ Mixer from my-first-blog@${GITHUB_SHA::7}"
           git push origin HEAD:main
           echo "Deployed to sudockin/dj-mixer (GitHub Pages will update shortly)."
