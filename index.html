@@ -1336,6 +1336,60 @@
     .lib-actions .la-fav.on { color: var(--red); border-color: rgba(255,84,112,0.5); background: rgba(255,84,112,0.12); }
     .lib-actions .la-del:hover { color: var(--red); border-color: var(--red); }
 
+    /* ── Discover (Discogs) ── */
+    .btn-discover {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 10px;
+      cursor: pointer;
+      padding: 2px 8px;
+      color: var(--amber);
+      background: rgba(255, 189, 74, 0.08);
+      border: 1px solid rgba(255, 189, 74, 0.4);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .btn-discover:hover { background: rgba(255, 189, 74, 0.16); }
+    .dsc-seed { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .dsc-seed input {
+      min-height: 40px; padding: 0 12px; color: var(--text);
+      background: rgba(0,0,0,.3); border: 1px solid var(--line); border-radius: var(--radius);
+      font: 500 0.88rem var(--sans); outline: none;
+    }
+    .dsc-seed input:focus { border-color: rgba(255,189,74,.6); }
+    .dsc-seed button {
+      cursor: pointer; padding: 0 16px; min-height: 40px; border-radius: var(--radius);
+      color: var(--amber); background: rgba(255,189,74,.12); border: 1px solid rgba(255,189,74,.4);
+      font-family: var(--mono); font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .dsc-seed button:hover { background: rgba(255,189,74,.2); }
+    .dsc-release { display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 14px; padding: 14px 6px; }
+    .dsc-cover { width: 96px; height: 96px; border-radius: var(--radius-sm, 8px); overflow: hidden; object-fit: cover;
+      display: grid; place-items: center; font-size: 2rem; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
+    .dsc-rel-title { color: var(--text); font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .dsc-rel-meta { color: var(--muted); font-family: var(--mono); font-size: 0.66rem; line-height: 1.6; }
+    .dsc-yt {
+      display: inline-block; margin-top: 8px; padding: 5px 11px; border-radius: 999px;
+      color: #ff9baa; text-decoration: none; font-size: 0.74rem; font-weight: 700;
+      background: rgba(255,93,120,.1); border: 1px solid rgba(255,93,120,.4);
+    }
+    .dsc-yt:hover { background: rgba(255,93,120,.18); }
+    .dsc-item { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 6px 6px; border-radius: var(--radius); }
+    .dsc-item:hover { background: rgba(255,255,255,.04); }
+    .dsc-thumb { width: 42px; height: 42px; border-radius: 6px; object-fit: cover; display: grid; place-items: center;
+      background: rgba(255,255,255,.05); border: 1px solid var(--line); font-size: 1rem; }
+    .dsc-info { min-width: 0; }
+    .dsc-t { overflow: hidden; color: var(--text); font-size: 0.82rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .dsc-m { color: var(--muted-2); font-family: var(--mono); font-size: 0.62rem; }
+    .dsc-yt-sm { width: 30px; height: 30px; display: grid; place-items: center; text-decoration: none;
+      color: #ff9baa; background: rgba(255,93,120,.1); border: 1px solid rgba(255,93,120,.35); border-radius: 6px; }
+    .dsc-yt-sm:hover { background: rgba(255,93,120,.2); }
+    .dsc-note { margin: 16px 8px 4px; color: var(--muted-2); font-size: 0.72rem; line-height: 1.5; text-align: center; }
+
     /* ── Queue ── */
     .btn-queue {
       display: inline-flex;
@@ -1586,7 +1640,7 @@
     <header class="masthead">
       <div class="masthead-kicker">Browser DJ console</div>
       <h1 class="title"><span class="title-mark" aria-hidden="true">MIX</span>DJ Mixer</h1>
-      <div class="masthead-status"><button class="btn-lib" id="lib-btn">📚 Library</button><button class="btn-queue" id="queue-btn">📋 Queue<span class="q-count" id="q-count" style="display:none">0</span></button><button class="btn-keys" id="keys-btn">⌨ Keys</button><label class="debug-toggle"><input type="checkbox" id="debug-chk">Debug</label></div>
+      <div class="masthead-status"><button class="btn-lib" id="lib-btn">📚 Library</button><button class="btn-queue" id="queue-btn">📋 Queue<span class="q-count" id="q-count" style="display:none">0</span></button><button class="btn-discover" id="discover-btn">🔎 Discover</button><button class="btn-keys" id="keys-btn">⌨ Keys</button><label class="debug-toggle"><input type="checkbox" id="debug-chk">Debug</label></div>
     </header>
 
     <div id="file-warning" class="system-warning">
@@ -1801,6 +1855,19 @@
       <button id="q-clear" title="Clear queue">Clear</button>
     </div>
     <div class="lib-body" id="queue-body"></div>
+  </aside>
+
+  <div class="lib-backdrop" id="discover-backdrop"></div>
+  <aside class="lib-drawer" id="discover-drawer" aria-label="Discover similar tracks">
+    <div class="lib-head">
+      <h2>🔎 Discover</h2>
+      <button class="lib-close" id="discover-close" title="Close">✕</button>
+    </div>
+    <div class="dsc-seed">
+      <input type="text" id="dsc-input" placeholder="Artist – Title…" aria-label="Discover seed">
+      <button id="dsc-go">Go</button>
+    </div>
+    <div class="lib-body" id="discover-body"></div>
   </aside>
 
   <div class="shortcuts-panel" id="shortcuts-panel">
@@ -3216,6 +3283,7 @@
           '<button class="la-a" data-act="a" title="Load Deck A">A</button>' +
           '<button class="la-b" data-act="b" title="Load Deck B">B</button>' +
           '<button class="la-q" data-act="q" title="Add to queue">＋</button>' +
+          '<button class="la-disc" data-act="disc" title="Discover similar">🔎</button>' +
           '<button class="la-fav' + (r.favorite ? ' on' : '') + '" data-act="fav" title="Favorite">♥</button>' +
           '<button class="la-del" data-act="del" title="Remove">🗑</button>' +
         '</div></div>';
@@ -3270,6 +3338,7 @@
         if (act === 'a') loadTrackToDeck('a', rec);
         else if (act === 'b') loadTrackToDeck('b', rec);
         else if (act === 'q') addToQueue(rec);
+        else if (act === 'disc') openDiscover(rec.artist, rec.title);
         else if (act === 'fav') favoriteTrack(rec.id);
         else if (act === 'del') removeTrack(rec.id);
       });
@@ -3445,6 +3514,102 @@
       renderQueue();
     }
 
+    // ── Discover (Discogs — client-side, no token, CORS-open) ───────────────
+    var discoverCache = {};
+    function discogs(params) {
+      params.type = 'release';
+      var qs = Object.keys(params).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+      var url = 'https://api.discogs.com/database/search?' + qs;
+      if (discoverCache[url]) return Promise.resolve(discoverCache[url]);
+      return fetch(url, { headers: { 'Accept': 'application/json' } }).then(function (r) {
+        if (r.status === 429) throw new Error('rate');
+        if (!r.ok) throw new Error('http' + r.status);
+        return r.json();
+      }).then(function (j) { discoverCache[url] = j; return j; });
+    }
+    function ytSearch(t) {
+      return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(String(t).replace(/\s*\(\d+\)\s*$/, ''));
+    }
+    function filterOut(list, id) { return (list || []).filter(function (r) { return r.id !== id; }); }
+
+    function releaseHTML(rel) {
+      var cover = rel.cover_image || rel.thumb || '';
+      var meta = [rel.year, (rel.genre && rel.genre.join(', ')), (rel.style && rel.style.join(', '))].filter(Boolean);
+      var label = (rel.label && rel.label[0]) || '';
+      return '<div class="dsc-release">' +
+        (cover ? '<img class="dsc-cover" src="' + esc(cover) + '" alt="" onerror="this.outerHTML=\'<div class=&quot;dsc-cover&quot;>💿</div>\'">' : '<div class="dsc-cover">💿</div>') +
+        '<div class="dsc-rel-info"><div class="dsc-rel-title">' + esc(rel.title) + '</div>' +
+        '<div class="dsc-rel-meta">' + esc(meta.join(' · ')) + '</div>' +
+        (label ? '<div class="dsc-rel-meta">' + esc(label) + '</div>' : '') +
+        '<a class="dsc-yt" href="' + ytSearch(rel.title) + '" target="_blank" rel="noopener">▶ Find on YouTube ↗</a>' +
+        '</div></div>';
+    }
+    function discCard(rel) {
+      var thumb = rel.thumb || rel.cover_image || '';
+      return '<div class="dsc-item">' +
+        (thumb ? '<img class="dsc-thumb" src="' + esc(thumb) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<div class="dsc-thumb">💿</div>') +
+        '<div class="dsc-info"><div class="dsc-t">' + esc(rel.title) + '</div>' +
+        '<div class="dsc-m">' + esc([rel.year, (rel.style && rel.style[0]) || (rel.genre && rel.genre[0]) || ''].filter(Boolean).join(' · ')) + '</div></div>' +
+        '<a class="dsc-yt-sm" href="' + ytSearch(rel.title) + '" target="_blank" rel="noopener" title="Find on YouTube">▶</a>' +
+        '</div>';
+    }
+    function discSection(title, items) {
+      if (!items.length) return '';
+      return '<div class="lib-section-title">' + esc(title) + '</div>' + items.map(discCard).join('');
+    }
+
+    function runDiscover(artist, title) {
+      var body = el('discover-body');
+      el('dsc-input').value = ((artist ? artist + ' - ' : '') + (title || '')).trim();
+      body.innerHTML = '<div class="lib-empty">Searching Discogs…</div>';
+      discogs({ q: ((artist ? artist + ' ' : '') + (title || '')).trim(), per_page: 1 }).then(function (j) {
+        var rel = (j.results && j.results[0]) || null;
+        if (!rel) { body.innerHTML = '<div class="lib-empty">No Discogs match.<br>Edit the search above and hit Go.</div>'; return; }
+        var style = (rel.style && rel.style[0]) || (rel.genre && rel.genre[0]) || '';
+        Promise.all([
+          artist ? discogs({ artist: artist, per_page: 8, sort: 'have', sort_order: 'desc' }).catch(function () { return null; }) : Promise.resolve(null),
+          style  ? discogs({ style: style, per_page: 12, sort: 'have', sort_order: 'desc' }).catch(function () { return null; }) : Promise.resolve(null)
+        ]).then(function (res) {
+          var byArtist = res[0] && res[0].results ? filterOut(res[0].results, rel.id) : [];
+          var byStyle  = res[1] && res[1].results ? filterOut(res[1].results, rel.id) : [];
+          var html = releaseHTML(rel);
+          html += discSection('More ' + style, byStyle.slice(0, 10));
+          html += discSection('More by ' + (artist || 'this artist'), byArtist.slice(0, 8));
+          html += '<div class="dsc-note">Discogs releases have no audio — tap ▶ to find one on YouTube, then paste it onto a deck.</div>';
+          body.innerHTML = html;
+        });
+      }).catch(function (e) {
+        body.innerHTML = '<div class="lib-empty">' + (e && e.message === 'rate'
+          ? 'Discogs rate limit — wait a few seconds and retry.'
+          : 'Couldn’t reach Discogs. Check your connection and retry.') + '</div>';
+      });
+    }
+
+    function discoverSeedFromDeck() {
+      var decks = ['a', 'b'], i, rec, t, ta;
+      for (i = 0; i < 2; i++) { rec = recordedIds[decks[i]] && findRec(recordedIds[decks[i]]); if (rec) return { artist: rec.artist, title: rec.title }; }
+      for (i = 0; i < 2; i++) { t = el('track-name-' + decks[i]).textContent; if (t && t !== 'No track loaded' && t !== '—') { ta = parseTitleArtist(t); return { artist: ta.artist, title: ta.title }; } }
+      return null;
+    }
+    function openDiscover(artist, title) {
+      closeLibrary(); closeQueue();
+      el('discover-drawer').classList.add('open'); el('discover-backdrop').classList.add('open');
+      if (artist || title) runDiscover(artist, title);
+      else if (!el('discover-body').innerHTML.trim()) el('discover-body').innerHTML = '<div class="lib-empty">Type an artist or track above and hit Go<br>to discover similar releases.</div>';
+    }
+    function closeDiscover() { el('discover-drawer').classList.remove('open'); el('discover-backdrop').classList.remove('open'); }
+
+    function wireDiscover() {
+      el('discover-btn').addEventListener('click', function () { var s = discoverSeedFromDeck(); openDiscover(s && s.artist, s && s.title); });
+      el('discover-close').addEventListener('click', closeDiscover);
+      el('discover-backdrop').addEventListener('click', closeDiscover);
+      el('dsc-go').addEventListener('click', function () {
+        var v = el('dsc-input').value.trim(); if (!v) return;
+        var ta = parseTitleArtist(v); runDiscover(ta.artist, ta.title || v);
+      });
+      el('dsc-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') el('dsc-go').click(); });
+    }
+
     // ── Orientation (mobile) ────────────────────────────────────────────────
     function updateOrientation() {
       var portrait = window.matchMedia('(max-width: 932px) and (orientation: portrait)').matches;
@@ -3468,6 +3633,7 @@
     wireLibrary();
     wireDragDrop();
     wireQueue();
+    wireDiscover();
     startTimingLoop();
 
     // Resume audio on the very first user gesture (iOS autoplay policy)
