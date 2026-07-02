@@ -3734,7 +3734,15 @@ body {
 
     // Assign a discovery pick to a deck. With a saved YouTube API key we resolve
     // the top video and load it in one click; otherwise we open a YouTube search.
-    function ytApiKey() { try { return localStorage.getItem('djmixer.ytkey') || ''; } catch (e) { return ''; } }
+    // A referrer-restricted YouTube key can be baked in at deploy time: the deploy
+    // workflow substitutes the placeholder below with the YT_API_KEY secret.
+    // A user's own key (saved in the drawer) always takes precedence.
+    var DEFAULT_YT_KEY = '__YT_API_KEY__';
+    function defaultYtKey() { return (DEFAULT_YT_KEY && DEFAULT_YT_KEY.charAt(0) !== '_') ? DEFAULT_YT_KEY : ''; }
+    function ytApiKey() {
+      try { return (localStorage.getItem('djmixer.ytkey') || '').trim() || defaultYtKey(); }
+      catch (e) { return defaultYtKey(); }
+    }
     function dscHint(msg) { var h = el('discover-hint'); if (h) h.textContent = msg || ''; }
     function assignFromDiscover(deck, title) {
       ensureAudioContextResumed();

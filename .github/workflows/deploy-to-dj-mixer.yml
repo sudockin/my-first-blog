@@ -35,6 +35,7 @@ jobs:
       - name: Push index.html to dj-mixer
         env:
           DEPLOY_TOKEN: ${{ secrets.DJ_MIXER_DEPLOY_TOKEN }}
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -50,6 +51,9 @@ jobs:
             "https://x-access-token:${DEPLOY_TOKEN}@github.com/sudockin/dj-mixer.git" target
 
           cp index.html target/index.html
+          # Bake a referrer-restricted YouTube key into the DEPLOYED copy only
+          # (kept out of source/git history). Empty secret -> placeholder cleared.
+          sed -i "s/__YT_API_KEY__/${YT_API_KEY:-}/g" target/index.html
           # Ship the release notes + repo landing README alongside the app (optional files)
           cp -f RELEASE_NOTES.md target/RELEASE_NOTES.md 2>/dev/null || true
           cp -f DJ_MIXER_README.md target/README.md 2>/dev/null || true
