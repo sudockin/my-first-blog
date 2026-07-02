@@ -1686,6 +1686,42 @@ body {
       color: #f2f0ea; background: linear-gradient(180deg, var(--key-2, #3a3936), var(--key, #292927));
       border: 1px solid #191917; font-family: var(--mono, monospace); font-weight: 700; font-size: 0.72rem;
     }
+
+    /* ── EQ knobs + VU meters (added post-facelift) ── */
+    .fx-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 2px 0; }
+    .knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .knob {
+      position: relative; width: 44px; height: 44px; border-radius: 50%;
+      cursor: ns-resize; touch-action: none; -webkit-user-select: none; user-select: none;
+      background: radial-gradient(circle at 50% 34%, var(--key-2, #3a3936), var(--key, #292927) 72%);
+      border: 1px solid #191917;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 2px 4px rgba(0,0,0,.28);
+    }
+    .knob.grab { box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 0 2px rgba(255,255,255,.18); }
+    .knob-dot {
+      position: absolute; left: 50%; top: 5px; width: 3px; height: 15px; margin-left: -1.5px;
+      border-radius: 2px; transform-origin: 50% 17px; background: #d7d4cc;
+    }
+    #deck-a .knob-dot { background: var(--a-glow, #57a5ff); box-shadow: 0 0 6px var(--a-glow, #57a5ff); }
+    #deck-b .knob-dot { background: var(--b-glow, #ff7a3d); box-shadow: 0 0 6px var(--b-glow, #ff7a3d); }
+    .knob.centered .knob-dot { background: #9a968c; box-shadow: none; }
+    .knob-lbl { font-family: var(--mono, monospace); font-size: 0.5rem; letter-spacing: 0.08em; color: var(--muted, #6e6a60); }
+    .knob-val { font-family: var(--mono, monospace); font-size: 0.56rem; font-weight: 700; color: var(--ink, #1d1c19); min-height: 0.7em; }
+
+    .vu {
+      position: relative; height: 8px; border-radius: 4px; overflow: hidden;
+      background: var(--screen, #16181b); border: 1px solid var(--line-strong, #aaa79c);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.5);
+    }
+    .vu > i {
+      display: block; height: 100%; width: 0%;
+      background: linear-gradient(90deg, #2fd483 0%, #2fd483 55%, #ffc247 80%, #ff5c6c 100%);
+      transition: width 0.06s linear;
+    }
+    .vu.hot > i { filter: brightness(1.15); }
+    .vu-master { width: 100%; }
+    .vu-cap { margin-top: 4px; text-align: center; font-family: var(--mono, monospace); font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted, #6e6a60); }
+    .deck.yt .fx-row, .deck.yt .vu { opacity: 0.35; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -1770,6 +1806,8 @@ body {
         <button class="btn-loop" data-bars="8" id="loop8-a" disabled>8</button>
         <button class="btn-loop-off" id="loopoff-a" disabled title="Loop off">✕</button>
       </div>
+      <div class="fx-row" id="fx-row-a"></div>
+      <div class="vu" id="vu-a"><i></i></div>
       <button class="btn-play" id="play-a" disabled>Play</button>
       <div class="vol-row">
         <span class="vol-label">Vol</span>
@@ -1796,6 +1834,8 @@ body {
       </div>
       <button class="btn-quant-global" id="quant-global">Quantize: Off</button>
       <button class="btn-quant-global" id="autosync-toggle">Auto-sync: Off</button>
+      <div class="vu-cap">Master</div>
+      <div class="vu vu-master" id="vu-master"><i></i></div>
     </div>
 
     <!-- ── Deck B ── -->
@@ -1863,6 +1903,8 @@ body {
         <button class="btn-loop" data-bars="8" id="loop8-b" disabled>8</button>
         <button class="btn-loop-off" id="loopoff-b" disabled title="Loop off">✕</button>
       </div>
+      <div class="fx-row" id="fx-row-b"></div>
+      <div class="vu" id="vu-b"><i></i></div>
       <button class="btn-play" id="play-b" disabled>Play</button>
       <div class="vol-row">
         <span class="vol-label">Vol</span>
@@ -2403,6 +2445,7 @@ body {
         clearLoadTimer(deck);
         setState(deck, 'ready');
         applyMix();
+        connectDeckFx(deck); // tap into the EQ/VU graph
         // Re-apply current tempo to the freshly loaded track
         applyTempo(deck);
         if (timing[deck].knownBpm) {
@@ -2461,6 +2504,7 @@ body {
         setState(deck, 'ready');
         applyMix();
         applyTempo(deck);
+        connectDeckFx(deck); // tap into the EQ/VU graph
         if (recordedIds[deck]) updateTrackMeta(recordedIds[deck], { duration: audio.duration });
       });
       audio.addEventListener('playing', function () { setState(deck, 'playing'); });
@@ -3044,6 +3088,7 @@ body {
       });
       lockSync();
       updatePhaseMeter();
+      updateVU();
       updateDebug();
       requestAnimationFrame(tickTiming);
     }
@@ -3736,6 +3781,168 @@ body {
       });
     }
 
+    // ── EQ / filter / gain / limiter / VU (Web Audio graph per audio deck) ───
+    var masterBus = null;                 // { ctx, input, limiter, analyser, data }
+    var deckFx    = { a: null, b: null }; // per-deck node chain
+    var deckKnobs = { a: [], b: [] };
+    var elSource  = (typeof WeakMap !== 'undefined') ? new WeakMap() : null; // media element -> MediaElementSourceNode
+
+    function eqContext() {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        if (!sharedCtx) sharedCtx = new AC();
+        return sharedCtx;
+      } catch (e) { return null; }
+    }
+    function ensureMasterBus() {
+      if (masterBus) return masterBus;
+      var ctx = eqContext(); if (!ctx) return null;
+      var input = ctx.createGain();
+      var limiter = ctx.createDynamicsCompressor();
+      try {
+        limiter.threshold.value = -3; limiter.knee.value = 0; limiter.ratio.value = 20;
+        limiter.attack.value = 0.003; limiter.release.value = 0.25;
+      } catch (e) {}
+      var analyser = ctx.createAnalyser(); analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.55;
+      input.connect(limiter); limiter.connect(analyser); analyser.connect(ctx.destination);
+      masterBus = { ctx: ctx, input: input, limiter: limiter, analyser: analyser, data: new Uint8Array(analyser.fftSize) };
+      return masterBus;
+    }
+    function ensureDeckFx(deck) {
+      if (deckFx[deck]) return deckFx[deck];
+      var m = ensureMasterBus(); if (!m) return null;
+      var ctx = m.ctx;
+      var low = ctx.createBiquadFilter();  low.type = 'lowshelf';  low.frequency.value = 200;
+      var mid = ctx.createBiquadFilter();  mid.type = 'peaking';   mid.frequency.value = 1000; mid.Q.value = 0.9;
+      var high = ctx.createBiquadFilter(); high.type = 'highshelf'; high.frequency.value = 3500;
+      var filter = ctx.createBiquadFilter(); filter.type = 'allpass'; filter.frequency.value = 20000;
+      var gain = ctx.createGain();
+      var analyser = ctx.createAnalyser(); analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.55;
+      low.connect(mid); mid.connect(high); high.connect(filter); filter.connect(gain);
+      gain.connect(analyser); analyser.connect(m.input);
+      deckFx[deck] = { ctx: ctx, low: low, mid: mid, high: high, filter: filter, gain: gain,
+                       analyser: analyser, data: new Uint8Array(analyser.fftSize), src: null,
+                       vals: { low: 0, mid: 0, high: 0, filter: 0, gain: 0 } };
+      return deckFx[deck];
+    }
+    function deckMediaEl(deck) {
+      try {
+        if (audioEngine[deck] === 'media') return mediaEls[deck] || null;
+        if (waveEls[deck] && typeof waveEls[deck].getMediaElement === 'function') return waveEls[deck].getMediaElement();
+      } catch (e) {}
+      return null;
+    }
+    // Tap the deck's media element into the EQ graph (once per element).
+    function connectDeckFx(deck) {
+      if (deckType[deck] !== 'audio') return;
+      var mediaEl = deckMediaEl(deck); if (!mediaEl) return;
+      var fx = ensureDeckFx(deck); if (!fx) return;
+      try {
+        var src = elSource && elSource.get(mediaEl);
+        if (!src) { src = fx.ctx.createMediaElementSource(mediaEl); if (elSource) elSource.set(mediaEl, src); }
+        if (fx.src && fx.src !== src) { try { fx.src.disconnect(); } catch (e) {} }
+        src.connect(fx.low);
+        fx.src = src;
+        // re-assert current knob values onto the fresh source path
+        ['low', 'mid', 'high', 'filter', 'gain'].forEach(function (b) { applyFx(deck, b, fx.vals[b]); });
+      } catch (e) {
+        // createMediaElementSource can only run once per element / may be blocked —
+        // if it fails the deck simply plays without EQ (audio path untouched).
+        console.warn('[DJ Mixer] EQ tap unavailable on deck ' + deck + ' — playing without EQ.', e);
+      }
+    }
+    function fexp(frac, a, b) { return a * Math.pow(b / a, frac); }
+    function applyFx(deck, band, v) {
+      var fx = deckFx[deck]; if (!fx) return;
+      fx.vals[band] = v;
+      var ct = fx.ctx.currentTime, T = 0.02;
+      try {
+        if (band === 'low')  fx.low.gain.setTargetAtTime(v, ct, T);
+        else if (band === 'mid')  fx.mid.gain.setTargetAtTime(v, ct, T);
+        else if (band === 'high') fx.high.gain.setTargetAtTime(v, ct, T);
+        else if (band === 'gain') fx.gain.gain.setTargetAtTime(Math.pow(10, v / 20), ct, T);
+        else if (band === 'filter') {
+          if (Math.abs(v) < 0.03) { fx.filter.type = 'allpass'; }
+          else if (v < 0) { fx.filter.type = 'lowpass';  fx.filter.frequency.setTargetAtTime(fexp(-v, 20000, 200), ct, T); }
+          else            { fx.filter.type = 'highpass'; fx.filter.frequency.setTargetAtTime(fexp(v, 20, 8000), ct, T); }
+        }
+      } catch (e) {}
+    }
+
+    // ── Multi-touch rotary knob (Pointer Events, pointerId-keyed) ────────────
+    function fmtKnob(band, v) {
+      if (band === 'filter') return Math.abs(v) < 0.03 ? '—' : (v < 0 ? 'LP' : 'HP');
+      return (v > 0 ? '+' : '') + Math.round(v);
+    }
+    function buildKnob(deck, band, label, min, max, def) {
+      var wrap = document.createElement('div'); wrap.className = 'knob-wrap';
+      var knob = document.createElement('div'); knob.className = 'knob'; knob.setAttribute('role', 'slider');
+      var dot = document.createElement('div'); dot.className = 'knob-dot'; knob.appendChild(dot);
+      var lbl = document.createElement('span'); lbl.className = 'knob-lbl'; lbl.textContent = label;
+      var val = document.createElement('span'); val.className = 'knob-val';
+      wrap.appendChild(knob); wrap.appendChild(lbl); wrap.appendChild(val);
+      var value = def;
+      function render() {
+        var frac = (value - min) / (max - min);
+        dot.style.transform = 'rotate(' + (-135 + frac * 270) + 'deg)';
+        val.textContent = fmtKnob(band, value);
+        knob.classList.toggle('centered', Math.abs(value - def) < (max - min) * 0.02);
+      }
+      function set(v) { value = Math.max(min, Math.min(max, v)); ensureDeckFx(deck); applyFx(deck, band, value); render(); }
+      var active = null, startY = 0, startV = 0;
+      knob.addEventListener('pointerdown', function (e) {
+        ensureAudioContextResumed();
+        active = e.pointerId; startY = e.clientY; startV = value;
+        try { knob.setPointerCapture(e.pointerId); } catch (x) {}
+        knob.classList.add('grab'); e.preventDefault();
+      });
+      knob.addEventListener('pointermove', function (e) {
+        if (active !== e.pointerId) return;
+        set(startV + ((startY - e.clientY) / 140) * (max - min));
+      });
+      function end(e) { if (active === e.pointerId) { active = null; knob.classList.remove('grab'); try { knob.releasePointerCapture(e.pointerId); } catch (x) {} } }
+      knob.addEventListener('pointerup', end);
+      knob.addEventListener('pointercancel', end);
+      knob.addEventListener('dblclick', function () { set(def); }); // reset
+      set(def);
+      return { el: wrap, set: set, get: function () { return value; }, reset: function () { set(def); } };
+    }
+    function wireEQ() {
+      ['a', 'b'].forEach(function (deck) {
+        var row = el('fx-row-' + deck); if (!row) return;
+        deckKnobs[deck] = [
+          buildKnob(deck, 'low',    'LOW',   -12, 12, 0),
+          buildKnob(deck, 'mid',    'MID',   -12, 12, 0),
+          buildKnob(deck, 'high',   'HIGH',  -12, 12, 0),
+          buildKnob(deck, 'filter', 'FILTER', -1,  1, 0),
+          buildKnob(deck, 'gain',   'GAIN',  -12, 12, 0)
+        ];
+        deckKnobs[deck].forEach(function (k) { row.appendChild(k.el); });
+      });
+    }
+
+    // ── VU meters (deck + master), driven from the rAF loop ──────────────────
+    function rmsOf(data) {
+      var s = 0; for (var i = 0; i < data.length; i++) { var x = (data[i] - 128) / 128; s += x * x; }
+      return Math.sqrt(s / data.length);
+    }
+    function setVU(bar, lvl) {
+      if (!bar) return;
+      var fill = bar.firstChild; if (!fill) return;
+      var pct = Math.min(100, lvl * 170);
+      fill.style.width = pct + '%';
+      bar.classList.toggle('hot', pct > 88);
+    }
+    function updateVU() {
+      ['a', 'b'].forEach(function (deck) {
+        var fx = deckFx[deck], bar = el('vu-' + deck), lvl = 0;
+        if (fx && states[deck] === 'playing') { fx.analyser.getByteTimeDomainData(fx.data); lvl = rmsOf(fx.data); }
+        setVU(bar, lvl);
+      });
+      if (masterBus) { masterBus.analyser.getByteTimeDomainData(masterBus.data); setVU(el('vu-master'), rmsOf(masterBus.data)); }
+    }
+
     // ── Orientation (mobile) ────────────────────────────────────────────────
     function updateOrientation() {
       var portrait = window.matchMedia('(max-width: 932px) and (orientation: portrait)').matches;
@@ -3760,6 +3967,7 @@ body {
     wireDragDrop();
     wireQueue();
     wireDiscover();
+    wireEQ();
     startTimingLoop();
 
     // Resume audio on the very first user gesture (iOS autoplay policy)
