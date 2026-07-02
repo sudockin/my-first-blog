@@ -4,6 +4,8 @@
 
 ### Two decks. Real beatmatching. Zero installs. It's all in your browser.
 
+[![DJ Mixer — a two-deck browser DJ console](hero.png)](https://sudockin.github.io/dj-mixer/)
+
 **[▶ &nbsp;TRY IT LIVE &nbsp;→ &nbsp;sudockin.github.io/dj-mixer](https://sudockin.github.io/dj-mixer/)**
 
 ![no build](https://img.shields.io/badge/build-none-2fd483?style=flat-square)
