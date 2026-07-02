@@ -3737,7 +3737,7 @@ body {
     // A referrer-restricted YouTube key can be baked in at deploy time: the deploy
     // workflow substitutes the placeholder below with the YT_API_KEY secret.
     // A user's own key (saved in the drawer) always takes precedence.
-    var DEFAULT_YT_KEY = '__YT_API_KEY__';
+    var DEFAULT_YT_KEY = 'AIzaSyCRQUN7fI6KLC3YuaDjLMTFsz_K_1KQ9tg'; // referrer-locked to sudockin.github.io
     function defaultYtKey() { return (DEFAULT_YT_KEY && DEFAULT_YT_KEY.charAt(0) !== '_') ? DEFAULT_YT_KEY : ''; }
     function ytApiKey() {
       try { return (localStorage.getItem('djmixer.ytkey') || '').trim() || defaultYtKey(); }
