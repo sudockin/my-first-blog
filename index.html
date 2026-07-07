@@ -3465,7 +3465,7 @@ body {
         if (act === 'a') loadTrackToDeck('a', rec);
         else if (act === 'b') loadTrackToDeck('b', rec);
         else if (act === 'q') addToQueue(rec);
-        else if (act === 'disc') openDiscover(rec.artist, rec.title);
+        else if (act === 'disc') openDiscover(rec.artist, rec.title, true);
         else if (act === 'fav') favoriteTrack(rec.id);
         else if (act === 'del') removeTrack(rec.id);
       });
@@ -3724,11 +3724,17 @@ body {
       for (i = 0; i < 2; i++) { t = el('track-name-' + decks[i]).textContent; if (t && t !== 'No track loaded' && t !== '—') { ta = parseTitleArtist(t); return { artist: ta.artist, title: ta.title }; } }
       return null;
     }
-    function openDiscover(artist, title) {
+    function openDiscover(artist, title, fresh) {
       closeLibrary(); closeQueue();
       el('discover-drawer').classList.add('open'); el('discover-backdrop').classList.add('open');
-      if (artist || title) runDiscover(artist, title);
-      else if (!el('discover-body').innerHTML.trim()) el('discover-body').innerHTML = '<div class="lib-empty">Type an artist or track above and hit Go<br>to discover similar releases.</div>';
+      var body = el('discover-body');
+      var hasResults = !!(body.querySelector && body.querySelector('.dsc-item, .dsc-release'));
+      if (fresh && (artist || title)) { runDiscover(artist, title); return; }
+      // Preserve existing results when reopening (so you can keep assigning to decks)
+      if (!hasResults) {
+        if (artist || title) runDiscover(artist, title);
+        else if (!body.innerHTML.trim()) body.innerHTML = '<div class="lib-empty">Type an artist or track above and hit Go<br>to discover similar releases.</div>';
+      }
     }
     function closeDiscover() { el('discover-drawer').classList.remove('open'); el('discover-backdrop').classList.remove('open'); }
 
@@ -3754,7 +3760,7 @@ body {
           .then(function (r) { return r.json(); })
           .then(function (j) {
             var id = j && j.items && j.items[0] && j.items[0].id && j.items[0].id.videoId;
-            if (id) { loadYouTubeWhenReady(deck, id); dscHint(''); closeDiscover(); }
+            if (id) { loadYouTubeWhenReady(deck, id); dscHint('✓ Loaded on Deck ' + deck.toUpperCase() + ' — pick another suggestion for the other deck.'); }
             else { dscHint('No embeddable YouTube match — opening search…'); window.open(ytSearch(q), '_blank', 'noopener'); }
           })
           .catch(function () { dscHint('YouTube API error — opening search instead…'); window.open(ytSearch(q), '_blank', 'noopener'); });
