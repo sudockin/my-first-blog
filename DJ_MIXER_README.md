@@ -17,14 +17,16 @@
 
 ---
 
-Paste a **YouTube link**, an **audio URL**, drop in an **MP3/WAV**, or hit a **built-in beat loop** — then mix. Two decks, a crossfader, live waveforms, automatic BPM, and beatmatching that actually *holds*. No account, no download, no plugin. Just open the page.
+Paste a **YouTube link**, an **audio URL**, drop in an **MP3/WAV**, or hit a **built-in beat loop** — then mix. A dark **Pioneer-style CDJ rig**: two decks with **jog wheels**, a shared **stacked beatmatch waveform**, and a central **DJM mixer** (EQ kills, channel faders, VU). Automatic BPM, beatmatching that actually *holds*, and one-click crate-digging. No account, no download, no plugin. Just open the page.
 
 ## ✨ What it does
 
 🎚️ **Two decks, four sources** — YouTube · audio URL · local file · generated beat loops
+💿 **CDJ decks + jog wheels** — spinning platters, CDJ CUE/PLAY, a stacked A/B beatmatch waveform
+🎛️ **DJM central mixer** — per-channel EQ kills (HI/MID/LO), vertical faders + VU meters, PFL, crossfader curves
 🌊 **Live waveforms + BPM** — automatic detection, tap-tempo fallback
 🤖 **Beatmatching that holds** — SYNC with continuous phase-lock + **Auto-sync**; beat grid, drift meter, nudge
-🎧 **Real mixing controls** — cue, 1/2/4/8-bar loops, quantize, smooth/linear/cut crossfader curves, pitch
+🎧 **Cue & loops** — set/jump cue, 1/2/4/8-bar loops, quantize, pitch
 📚 **A library with a memory** — auto-saves everything you play; search, favorites, history, drag & drop
 📋 **Queue** — queue next, reorder, auto-advance
 🔎 **Discover** — Discogs-powered "more like this" crate-digging → send picks straight to a deck
@@ -46,6 +48,17 @@ Tip: hit **Demo Track** on both decks, press play on each, flip **Auto-sync** on
 - [WaveSurfer.js](https://wavesurfer.xyz/) for waveforms · Web Audio API for BPM + generated loops · YouTube IFrame API
 - Continuous **phase-lock** keeps synced decks within a few ms for minutes
 - Library / queue persist in `localStorage`; Discover calls the Discogs API client-side
+
+## 📸 The evolution
+
+Three eras, same engine — the look has changed a lot; the beatmatching hasn't.
+
+| v1.0 · "Drop the Needle" | v2.0 · "Field Unit" | v3.0 · "Club Mode" |
+|:---:|:---:|:---:|
+| ![v1 neon](v1-neon.png) | ![v2 field unit](v2-fieldunit.png) | ![v3 CDJ](hero.png) |
+| Neon cyberpunk — where it started | Light industrial hardware console | Dark Pioneer CDJ + DJM rig — where we are now |
+
+Full notes for every release live in **[RELEASE_NOTES.md](RELEASE_NOTES.md)**.
 
 ## 🎵 Credits
 

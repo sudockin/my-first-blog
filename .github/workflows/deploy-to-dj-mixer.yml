@@ -23,6 +23,8 @@ on:
       - RELEASE_NOTES.md
       - DJ_MIXER_README.md
       - dj-mixer-hero.png
+      - v1-neon.png
+      - v2-fieldunit.png
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
 jobs:
@@ -58,6 +60,8 @@ jobs:
           cp -f RELEASE_NOTES.md target/RELEASE_NOTES.md 2>/dev/null || true
           cp -f DJ_MIXER_README.md target/README.md 2>/dev/null || true
           cp -f dj-mixer-hero.png target/hero.png 2>/dev/null || true
+          cp -f v1-neon.png target/v1-neon.png 2>/dev/null || true
+          cp -f v2-fieldunit.png target/v2-fieldunit.png 2>/dev/null || true
           # Keep Pages serving raw HTML (no Jekyll processing)
           touch target/.nojekyll
 
